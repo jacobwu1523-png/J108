@@ -3,29 +3,66 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>園遊會商店 PRO</title>
+    <title>園遊會系統 PRO</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <style>
-        /* 採用黑體設計，提升質感 */
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap');
-        body { font-family: 'Noto Sans TC', sans-serif; background: #fafafa; -webkit-tap-highlight-color: transparent; }
         
-        .page { display: none; }
-        .page.active { display: block; animation: slideUp 0.4s ease-out; }
-        @keyframes slideUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+        body { 
+            font-family: 'Noto Sans TC', sans-serif; 
+            background: #fafafa; 
+            margin: 0; 
+            overflow-x: hidden;
+        }
 
-        /* 底部導覽列 */
-        .bottom-nav { position: fixed; bottom: 25px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 450px; background: rgba(0,0,0,0.9); backdrop-filter: blur(10px); border-radius: 25px; display: flex; padding: 8px; box-shadow: 0 15px 30px rgba(0,0,0,0.2); z-index: 100; }
-        .nav-item { flex: 1; text-align: center; padding: 12px; border-radius: 20px; color: #777; font-weight: bold; transition: 0.3s; cursor: pointer; }
+        /* 解決切換閃爍的核心佈局 */
+        .page-wrapper {
+            display: grid;
+            grid-template-areas: "main";
+            width: 100%;
+            min-height: 100vh;
+        }
+
+        .page { 
+            grid-area: main;
+            opacity: 0; 
+            visibility: hidden;
+            transition: opacity 0.2s ease-in-out;
+            padding-bottom: 120px; /* 留空間給底部導航 */
+        }
+
+        .page.active { 
+            opacity: 1; 
+            visibility: visible;
+            z-index: 10;
+        }
+
+        /* 底部導航島 */
+        .bottom-nav { 
+            position: fixed; bottom: 25px; left: 50%; transform: translateX(-50%); 
+            width: 92%; max-width: 450px; background: rgba(0,0,0,0.9); 
+            backdrop-filter: blur(15px); border-radius: 28px; 
+            display: flex; padding: 8px; z-index: 100;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+        }
+        
+        .nav-item { 
+            flex: 1; text-align: center; padding: 14px; border-radius: 22px; 
+            color: #777; font-weight: bold; transition: 0.3s; cursor: pointer;
+        }
+        
         .nav-item.active { background: #fff; color: #000; }
 
-        /* CSS 通知彈窗 */
-        #toast { position: fixed; top: 30px; left: 50%; transform: translateX(-50%) translateY(-20px); z-index: 1000; background: #fff; color: #000; padding: 14px 28px; border-radius: 20px; font-weight: 900; box-shadow: 0 10px 40px rgba(0,0,0,0.1); opacity: 0; transition: 0.4s; pointer-events: none; border: 1px solid #eee; }
+        /* 通知彈窗 CSS */
+        #toast { 
+            position: fixed; top: 30px; left: 50%; transform: translateX(-50%) translateY(-20px); 
+            z-index: 1000; background: #000; color: #fff; padding: 14px 28px; 
+            border-radius: 20px; font-weight: 900; opacity: 0; transition: 0.4s; pointer-events: none; 
+        }
         #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
-        /* 卡片與輸入框 */
-        .card { background: #fff; border-radius: 24px; border: 1px solid #f0f0f0; overflow: hidden; transition: 0.3s; }
+        .card { background: #fff; border-radius: 24px; border: 1px solid #f0f0f0; overflow: hidden; }
         input, select { border: 1px solid #eee !important; background: #f9f9f9 !important; font-size: 16px !important; }
     </style>
 </head>
@@ -33,34 +70,35 @@
 
     <div id="toast">通知訊息</div>
 
-    <main class="max-w-4xl mx-auto p-6 pb-32">
-        <section id="page-home" class="page active">
-            <h1 class="text-4xl font-black mb-8 tracking-tighter text-slate-900">SHOPPING.</h1>
-            <div id="product-list" class="grid grid-cols-2 sm:grid-cols-3 gap-5"></div>
+    <main class="page-wrapper">
+        <section id="page-home" class="page active p-6">
+            <h1 class="text-4xl font-black mb-8 tracking-tighter">SHOP.</h1>
+            <div id="product-list" class="grid grid-cols-2 gap-4"></div>
         </section>
 
-        <section id="page-admin" class="page">
+        <section id="page-admin" class="page p-6">
             <h1 class="text-4xl font-black mb-8 tracking-tighter">DATA.</h1>
-            <div class="bg-white p-8 rounded-[30px] border mb-6 shadow-sm">
+            <div class="bg-white p-8 rounded-[30px] border mb-6">
                 <p class="text-slate-400 text-xs font-bold mb-1">TOTAL REVENUE</p>
-                <h2 id="total-revenue" class="text-5xl font-black tracking-tight text-indigo-600">$0</h2>
+                <h2 id="total-revenue" class="text-5xl font-black text-indigo-600">$0</h2>
             </div>
+            
             <div class="card p-6 mb-8">
-                <h3 class="font-bold mb-4 text-slate-800">快速上架</h3>
+                <h3 class="font-bold mb-4">快速上架商品</h3>
                 <div class="space-y-3">
-                    <input id="new-p-name" type="text" placeholder="商品名稱" class="w-full p-4 rounded-xl outline-none">
+                    <input id="new-p-name" type="text" placeholder="品名" class="w-full p-4 rounded-xl outline-none">
                     <div class="flex gap-2">
                         <input id="new-p-price" type="number" placeholder="價格" class="w-full p-4 rounded-xl outline-none">
                         <input id="new-p-stock" type="number" placeholder="庫存" class="w-full p-4 rounded-xl outline-none">
                     </div>
                     <input id="new-p-img" type="text" placeholder="圖片連結 (URL)" class="w-full p-4 rounded-xl outline-none">
-                    <button id="btn-add" class="w-full bg-slate-900 text-white py-4 rounded-2xl font-black hover:bg-black transition-colors">確認上架</button>
+                    <button id="btn-add" class="w-full bg-black text-white py-4 rounded-2xl font-black">確認上架</button>
                 </div>
             </div>
             <div id="admin-orders" class="space-y-3"></div>
         </section>
 
-        <section id="page-delivery" class="page">
+        <section id="page-delivery" class="page p-6">
             <h1 class="text-4xl font-black mb-8 tracking-tighter">LOGISTICS.</h1>
             <div id="delivery-list" class="space-y-4"></div>
         </section>
@@ -72,26 +110,29 @@
         <div onclick="go('delivery')" id="n-delivery" class="nav-item">配送</div>
     </nav>
 
-    <div id="modal" class="fixed inset-0 bg-white/60 hidden backdrop-blur-xl z-[200] flex items-center justify-center p-6">
+    <div id="modal" class="fixed inset-0 bg-white/70 hidden backdrop-blur-xl z-[200] flex items-center justify-center p-6">
         <div class="bg-white w-full max-w-sm rounded-[40px] p-8 shadow-2xl border border-white">
-            <h2 id="m-title" class="text-3xl font-black mb-6 text-slate-900"></h2>
+            <h2 id="m-title" class="text-3xl font-black mb-6"></h2>
             <div class="space-y-4">
-                <input id="f-name" type="text" placeholder="姓名" class="w-full p-4 rounded-2xl outline-none">
+                <input id="f-name" type="text" placeholder="你的姓名" class="w-full p-4 rounded-2xl outline-none border">
+                
                 <div class="flex gap-2">
                     <select id="f-class" class="flex-1 p-4 rounded-2xl outline-none"></select>
                     <select id="f-seat" class="flex-1 p-4 rounded-2xl outline-none"></select>
                 </div>
+                
                 <div class="text-xs font-bold text-slate-400 ml-1">購買數量</div>
                 <input id="f-qty" type="number" value="1" min="1" class="w-full p-4 rounded-2xl outline-none text-center font-black text-2xl">
-                <button id="btn-sub" class="w-full bg-indigo-600 text-white py-5 rounded-[25px] font-black text-lg shadow-xl shadow-indigo-100">發送預訂請求</button>
-                <button onclick="closeM()" class="w-full text-slate-300 font-bold py-2 hover:text-slate-500 transition-colors">返回</button>
+                
+                <button id="btn-sub" class="w-full bg-indigo-600 text-white py-5 rounded-[25px] font-black text-lg shadow-xl">發送訂單</button>
+                <button onclick="closeM()" class="w-full text-slate-300 font-bold py-2">返回</button>
             </div>
         </div>
     </div>
 
     <script>
         const SUPABASE_URL = 'https://qliyeeermhtzxismtfdc.supabase.co';
-        const SUPABASE_KEY = 'sb_publishable_8LJkxWG-tcL0PBPtDyreVw_HyqKSDNk';
+        const SUPABASE_KEY = 'sb_publishable_8LJkxWG-tcL0PBPtDyreVw_HyqKSDNk'; // 確保這是 anon public key
         const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         let products = [];
@@ -105,13 +146,17 @@
 
         const cS = document.getElementById('f-class');
         const sS = document.getElementById('f-seat');
-        for(let i=1; i<=100; i++) { cS.add(new Option(i+'班', i)); sS.add(new Option(i+'號', i)); }
+        for(let i=1; i<=100; i++) { 
+            cS.add(new Option(i+'班', i)); 
+            sS.add(new Option(i+'號', i)); 
+        }
 
         function go(id) {
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
             document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
             document.getElementById('page-'+id).classList.add('active');
             document.getElementById('n-'+id).classList.add('active');
+            window.scrollTo(0,0);
             refresh();
         }
 
@@ -124,15 +169,13 @@
 
         function renderP() {
             document.getElementById('product-list').innerHTML = products.map(p => `
-                <div class="card shadow-sm group">
-                    <div class="overflow-hidden">
-                        <img src="${p.image_url || 'https://via.placeholder.com/300'}" class="w-full h-40 object-cover group-hover:scale-110 transition-transform duration-500">
-                    </div>
-                    <div class="p-5">
+                <div class="card shadow-sm">
+                    <img src="${p.image_url || 'https://via.placeholder.com/300'}" class="w-full h-40 object-cover">
+                    <div class="p-4">
                         <h3 class="font-bold text-slate-800 truncate">${p.name}</h3>
                         <p class="font-black text-indigo-600 mt-1">$${p.price}</p>
-                        <button onclick="openM('${p.id}')" ${p.stock <= 0 ? 'disabled' : ''} class="w-full mt-4 py-2 ${p.stock <= 0 ? 'bg-slate-100 text-slate-300' : 'bg-slate-50 text-slate-900'} rounded-xl text-xs font-black">
-                            ${p.stock <= 0 ? '已完售' : '立即預訂'}
+                        <button onclick="openM('${p.id}')" ${p.stock <= 0 ? 'disabled' : ''} class="w-full mt-3 py-2 ${p.stock <= 0 ? 'bg-slate-100 text-slate-300' : 'bg-slate-900 text-white'} rounded-xl text-xs font-black">
+                            ${p.stock <= 0 ? '已完售' : '預訂'}
                         </button>
                     </div>
                 </div>
@@ -146,15 +189,17 @@
         };
 
         document.getElementById('btn-sub').onclick = async () => {
+            const name = document.getElementById('f-name').value;
             const qty = parseInt(document.getElementById('f-qty').value);
-            if(qty > currentP.stock) return toast('❌ 庫存不足');
+            if(!name) return toast('請填寫姓名');
+            if(qty > currentP.stock) return toast('庫存不足');
             
             const btn = document.getElementById('btn-sub');
             btn.disabled = true; btn.innerText = "提交中...";
 
             await client.from('products').update({ stock: currentP.stock - qty }).eq('id', currentP.id);
             const { error } = await client.from('orders').insert([{
-                customer_name: document.getElementById('f-name').value,
+                customer_name: name,
                 class_name: document.getElementById('f-class').value,
                 seat_number: document.getElementById('f-seat').value,
                 product_name: currentP.name,
@@ -163,17 +208,16 @@
                 image_url: currentP.image_url
             }]);
 
-            if(!error) { toast('🚀 訂單已成功送出！'); closeM(); refresh(); }
-            else { toast('⚠️ 出錯了，請檢查資料庫連線'); }
-            btn.disabled = false; btn.innerText = "發送預訂請求";
+            if(!error) { toast('🚀 訂單已送出！'); closeM(); refresh(); }
+            btn.disabled = false; btn.innerText = "發送訂單";
         };
 
         function renderA(o) {
             document.getElementById('total-revenue').innerText = '$' + o.reduce((s, x) => s + x.total_price, 0);
             document.getElementById('admin-orders').innerHTML = o.map(x => `
-                <div class="bg-white border-l-4 border-indigo-500 p-4 rounded-xl flex justify-between shadow-sm">
-                    <span class="text-sm font-bold text-slate-700">${x.customer_name} / ${x.product_name} x${x.quantity}</span>
-                    <span class="font-black text-slate-900">$${x.total_price}</span>
+                <div class="bg-white border-l-4 border-black p-4 rounded-xl flex justify-between shadow-sm">
+                    <span class="text-sm font-bold">${x.customer_name} / ${x.product_name} x${x.quantity}</span>
+                    <span class="font-black">$${x.total_price}</span>
                 </div>
             `).join('');
         }
@@ -182,49 +226,42 @@
             document.getElementById('delivery-list').innerHTML = o.map(x => {
                 const fin = x.delivery_status === '已完成';
                 return `
-                <div class="bg-white p-5 rounded-[28px] border-2 ${fin?'border-slate-50 opacity-40':'border-indigo-50 shadow-md'} flex items-center gap-5">
-                    <img src="${x.image_url || 'https://via.placeholder.com/150'}" class="w-16 h-16 rounded-2xl object-cover">
+                <div class="bg-white p-5 rounded-[28px] border-2 ${fin?'opacity-30':'border-indigo-100 shadow-md'} flex items-center gap-4">
                     <div class="flex-1">
-                        <p class="text-lg font-black text-slate-900">${x.class_name} 班 ${x.seat_number} 號</p>
-                        <p class="text-xs font-bold text-slate-400 mb-3">${x.customer_name} · ${x.product_name}</p>
-                        <div class="flex gap-2">
-                            <select onchange="upd('${x.id}','delivery_status',this.value)" class="flex-1 text-[11px] font-black bg-slate-50 p-2 rounded-lg border-0">
-                                <option ${x.delivery_status==='未配送'?'selected':''}>未配送</option>
-                                <option ${x.delivery_status==='已完成'?'selected':''}>已完成</option>
-                            </select>
-                        </div>
+                        <p class="text-lg font-black">${x.class_name} 班 ${x.seat_number} 號</p>
+                        <p class="text-xs font-bold text-slate-400">${x.customer_name} · ${x.product_name}</p>
+                        <select onchange="upd('${x.id}','delivery_status',this.value)" class="mt-2 w-full text-xs font-black bg-slate-50 p-2 rounded-lg border-0">
+                            <option ${x.delivery_status==='未配送'?'selected':''}>未配送</option>
+                            <option ${x.delivery_status==='已完成'?'selected':''}>已完成</option>
+                        </select>
                     </div>
                 </div>`;
             }).join('');
         }
 
         window.upd = async (id, f, v) => {
-            await client.from('orders').update({ [f]: v }).eq('id', id);
-            toast('✅ 狀態已同步更新'); refresh();
+            await client.from('orders').update({ [f]: v }).eq(id, id);
+            toast('✅ 狀態已更新'); refresh();
         };
 
         document.getElementById('btn-add').onclick = async () => {
             const name = document.getElementById('new-p-name').value;
             const price = document.getElementById('new-p-price').value;
+            const stock = document.getElementById('new-p-stock').value;
+            const img = document.getElementById('new-p-img').value;
             if(!name || !price) return toast('請輸入名稱與價格');
-            await client.from('products').insert([{ 
-                name, price, 
-                stock: document.getElementById('new-p-stock').value, 
-                image_url: document.getElementById('new-p-img').value 
-            }]);
-            toast('✨ 商品成功上架'); refresh();
+            
+            await client.from('products').insert([{ name, price, stock, image_url: img }]);
+            toast('✨ 商品已上架'); refresh();
         };
 
-        // 即時監聽：有人下單會自動跳彈窗
-        client.channel('realtime-shop').on('postgres_changes', { event: '*', schema: 'public' }, (payload) => {
-            if(payload.eventType === 'INSERT' && payload.table === 'orders') {
-                toast('🔔 收到一筆新訂單！');
-            }
+        // 即時廣播
+        client.channel('any').on('postgres_changes', { event: '*', schema: 'public' }, () => {
             refresh();
         }).subscribe();
 
-        refresh();
         window.closeM = () => document.getElementById('modal').classList.add('hidden');
+        refresh();
     </script>
 </body>
 </html>
