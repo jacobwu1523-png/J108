@@ -8,11 +8,12 @@
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&display=swap');
-        body { font-family: 'Noto Sans TC', sans-serif; }
+        body { font-family: 'Noto Sans TC', sans-serif; -webkit-tap-highlight-color: transparent; }
         .floating-btn { position: fixed; right: 20px; bottom: 20px; z-index: 50; }
         .page { display: none; }
         .active { display: block; }
         .order-card { transition: all 0.5s ease; }
+        input, select { font-size: 16px !important; } /* 防止平板/手機輸入時自動放大 */
     </style>
 </head>
 <body class="bg-gray-50 pb-24">
@@ -34,20 +35,18 @@
 
     <section id="page-admin" class="page p-4">
         <h1 class="text-2xl font-bold mb-4">📊 系統管理後台</h1>
-        
         <div class="grid grid-cols-2 gap-4 mb-6">
             <div class="bg-white p-4 rounded-xl shadow-sm border-l-4 border-green-500">
-                <p class="text-xs text-gray-500 uppercase">總預估營業額</p>
+                <p class="text-xs text-gray-500">總預估營業額</p>
                 <p id="total-revenue" class="text-xl font-bold text-gray-800">$0</p>
             </div>
             <div class="bg-white p-4 rounded-xl shadow-sm border-l-4 border-blue-500">
-                <p class="text-xs text-gray-500 uppercase">總預購單數</p>
+                <p class="text-xs text-gray-500">總訂單數</p>
                 <p id="total-orders" class="text-xl font-bold text-gray-800">0</p>
             </div>
         </div>
-
         <div class="bg-white p-5 rounded-xl shadow-sm mb-6 border border-gray-200">
-            <h2 class="font-bold mb-4 text-gray-700 flex items-center">➕ 上架新商品</h2>
+            <h2 class="font-bold mb-4 text-gray-700">➕ 上架新商品</h2>
             <div class="space-y-3 text-sm">
                 <input id="new-p-name" type="text" placeholder="商品名稱" class="w-full border p-2 rounded-lg">
                 <div class="flex gap-2">
@@ -55,44 +54,40 @@
                     <input id="new-p-stock" type="number" placeholder="庫存" class="w-full border p-2 rounded-lg">
                 </div>
                 <input id="new-p-img" type="text" placeholder="圖片連結 (URL)" class="w-full border p-2 rounded-lg">
-                <button onclick="addProduct()" class="w-full bg-indigo-600 text-white py-3 rounded-lg font-bold">確認上架商品</button>
+                <button onclick="addProduct()" class="w-full bg-indigo-600 text-white py-3 rounded-lg font-bold">確認上架</button>
             </div>
         </div>
-
         <h2 class="font-bold mb-3 text-gray-700">即時訂單流</h2>
         <div id="admin-orders" class="space-y-2"></div>
     </section>
 
     <section id="page-delivery" class="page p-4">
-        <h1 class="text-2xl font-bold mb-4 text-orange-600 font-bold">🚚 配送與支付更新</h1>
+        <h1 class="text-2xl font-bold mb-4 text-orange-600">🚚 配送與支付更新</h1>
         <div id="delivery-list" class="space-y-4"></div>
     </section>
 
     <div id="order-modal" class="fixed inset-0 bg-black/60 hidden flex items-center justify-center p-4 z-[100] backdrop-blur-sm">
         <div class="bg-white p-6 rounded-2xl w-full max-w-md shadow-2xl">
-            <h2 id="modal-title" class="text-xl font-bold mb-4 text-gray-800">填寫預購資訊</h2>
+            <h2 id="modal-title" class="text-xl font-bold mb-4">填寫預購資訊</h2>
             <div class="space-y-4">
-                <input id="form-name" type="text" placeholder="姓名" class="w-full border-2 p-3 rounded-xl focus:border-blue-500 outline-none">
+                <input id="form-name" type="text" placeholder="姓名" class="w-full border-2 p-3 rounded-xl">
                 <div class="flex gap-2">
-                    <select id="form-class" class="flex-1 border-2 p-3 rounded-xl focus:border-blue-500 outline-none"></select>
-                    <select id="form-seat" class="flex-1 border-2 p-3 rounded-xl focus:border-blue-500 outline-none"></select>
+                    <select id="form-class" class="flex-1 border-2 p-3 rounded-xl"></select>
+                    <select id="form-seat" class="flex-1 border-2 p-3 rounded-xl"></select>
                 </div>
-                <input id="form-loc" type="text" placeholder="配送地點 (例如：班級或走廊)" class="w-full border-2 p-3 rounded-xl focus:border-blue-500 outline-none">
-                <div>
-                    <label class="text-xs text-gray-500 ml-1">購買數量</label>
-                    <input id="form-qty" type="number" value="1" min="1" class="w-full border-2 p-3 rounded-xl focus:border-blue-500 outline-none">
-                </div>
-                <button id="submit-btn" onclick="submitOrder()" class="w-full bg-blue-600 text-white py-4 rounded-xl font-bold text-lg shadow-lg active:scale-95 transition-transform">確認預購</button>
-                <button onclick="closeModal()" class="w-full text-gray-400 font-medium py-2">返回取消</button>
+                <input id="form-loc" type="text" placeholder="配送地點" class="w-full border-2 p-3 rounded-xl">
+                <input id="form-qty" type="number" value="1" min="1" class="w-full border-2 p-3 rounded-xl">
+                <button id="submit-btn" onclick="submitOrder()" class="w-full bg-blue-600 text-white py-4 rounded-xl font-bold text-lg shadow-lg">確認預購</button>
+                <button onclick="closeModal()" class="w-full text-gray-400 py-2">返回取消</button>
             </div>
         </div>
     </div>
 
     <script>
-        // --- 請在此填入你的 Supabase 資訊 ---
-        const SUPABASE_URL = 'https://你的專案ID.supabase.co';
-        const SUPABASE_KEY = '你的公鑰';
-        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        // --- 已幫你填好連線資訊 ---
+        const SUPABASE_URL = 'https://qliyeeermhtzxismtfdc.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_8LJkxWG-tcL0PBPtDyreVw_HyqKSDNk';
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         let products = [];
         let currentProduct = null;
@@ -109,35 +104,35 @@
         function showPage(pageId) {
             if(pageId !== 'home') {
                 const pw = prompt("請輸入管理密碼：");
-                if(pw !== "1234") return alert("無權限訪問");
+                if(pw !== "1234") return alert("密碼錯誤");
             }
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
             document.getElementById(`page-${pageId}`).classList.add('active');
-            if(pageId !== 'home') refreshData();
+            refreshData();
         }
 
         async function refreshData() {
-            const { data: pData } = await supabase.from('products').select('*');
-            products = pData;
-            renderProducts();
-            
-            const { data: oData } = await supabase.from('orders').select('*').order('created_at', { ascending: false });
-            renderAdmin(oData);
-            renderDelivery(oData);
+            const { data: pData } = await supabaseClient.from('products').select('*');
+            if(pData) {
+                products = pData;
+                renderProducts();
+            }
+            const { data: oData } = await supabaseClient.from('orders').select('*').order('created_at', { ascending: false });
+            if(oData) {
+                renderAdmin(oData);
+                renderDelivery(oData);
+            }
         }
 
         function renderProducts() {
             const list = document.getElementById('product-list');
             list.innerHTML = products.map(p => `
                 <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                    <div class="relative">
-                        <img src="${p.image_url || 'https://via.placeholder.com/300'}" class="w-full h-32 object-cover">
-                        ${p.stock <= 0 ? '<div class="absolute inset-0 bg-black/50 flex items-center justify-center text-white font-bold">完售</div>' : ''}
-                    </div>
+                    <img src="${p.image_url || 'https://via.placeholder.com/300'}" class="w-full h-32 object-cover">
                     <div class="p-3 text-center">
                         <h3 class="font-bold text-gray-700 truncate">${p.name}</h3>
                         <p class="text-blue-600 font-bold">$${p.price}</p>
-                        <p class="text-[10px] text-gray-400">剩餘: ${p.stock}</p>
+                        <p class="text-[10px] text-gray-400">庫存: ${p.stock}</p>
                         <button onclick="openOrderModal('${p.id}')" ${p.stock <= 0 ? 'disabled' : ''} class="mt-2 w-full ${p.stock <= 0 ? 'bg-gray-200 text-gray-400' : 'bg-blue-50 text-blue-600'} py-2 rounded-xl text-sm font-bold">預購</button>
                     </div>
                 </div>
@@ -155,22 +150,19 @@
             const price = parseInt(document.getElementById('new-p-price').value);
             const stock = parseInt(document.getElementById('new-p-stock').value);
             const img = document.getElementById('new-p-img').value;
-            if(!name || !price) return alert("請填寫名稱與價格");
-            await supabase.from('products').insert([{ name, price, stock, image_url: img }]);
+            if(!name || !price) return alert("請填寫內容");
+            await supabaseClient.from('products').insert([{ name, price, stock, image_url: img }]);
             alert("上架成功！");
             refreshData();
         }
 
         async function submitOrder() {
             const qty = parseInt(document.getElementById('form-qty').value);
-            if(qty > currentProduct.stock) return alert('庫存不夠囉！');
+            if(qty > currentProduct.stock) return alert('庫存不足');
             
             document.getElementById('submit-btn').disabled = true;
-            document.getElementById('submit-btn').innerText = "處理中...";
-
-            // 扣庫存與建訂單
-            await supabase.from('products').update({ stock: currentProduct.stock - qty }).eq('id', currentProduct.id);
-            await supabase.from('orders').insert([{
+            await supabaseClient.from('products').update({ stock: currentProduct.stock - qty }).eq('id', currentProduct.id);
+            await supabaseClient.from('orders').insert([{
                 customer_name: document.getElementById('form-name').value,
                 class_name: document.getElementById('form-class').value,
                 seat_number: document.getElementById('form-seat').value,
@@ -181,9 +173,8 @@
                 image_url: currentProduct.image_url
             }]);
 
-            alert('預購成功，請等待配送！');
+            alert('預購成功！');
             document.getElementById('submit-btn').disabled = false;
-            document.getElementById('submit-btn').innerText = "確認預購";
             closeModal();
             refreshData();
         }
@@ -210,17 +201,17 @@
                 if (isFinished && timeDiff > 120000) return ''; 
 
                 return `
-                    <div class="order-card bg-white p-4 rounded-2xl shadow-sm border-2 ${isFinished ? 'border-gray-200 opacity-50' : 'border-orange-100'} flex gap-4">
+                    <div class="bg-white p-4 rounded-2xl shadow-sm border-2 ${isFinished ? 'border-gray-200 opacity-50' : 'border-orange-100'} flex gap-4">
                         <img src="${o.image_url || 'https://via.placeholder.com/150'}" class="w-16 h-16 rounded-xl object-cover border">
                         <div class="flex-1">
                             <p class="font-bold text-gray-800">${o.class_name}班${o.seat_number}號 ${o.customer_name}</p>
                             <p class="text-xs text-gray-400 mb-2">📍 ${o.location}</p>
-                            <div class="flex gap-2">
-                                <select onchange="updateStatus('${o.id}', 'payment_status', this.value)" class="flex-1 text-xs border rounded-lg p-2 ${o.payment_status==='已付款'?'bg-green-50 text-green-600 border-green-200':''}">
+                            <div class="flex gap-2 text-xs">
+                                <select onchange="updateStatus('${o.id}', 'payment_status', this.value)" class="flex-1 border rounded-lg p-2">
                                     <option ${o.payment_status==='未付款'?'selected':''}>未付款</option>
                                     <option ${o.payment_status==='已付款'?'selected':''}>已付款</option>
                                 </select>
-                                <select onchange="updateStatus('${o.id}', 'delivery_status', this.value)" class="flex-1 text-xs border rounded-lg p-2 ${o.delivery_status==='已完成'?'bg-gray-100 text-gray-500':''}">
+                                <select onchange="updateStatus('${o.id}', 'delivery_status', this.value)" class="flex-1 border rounded-lg p-2">
                                     <option ${o.delivery_status==='未配送'?'selected':''}>未配送</option>
                                     <option ${o.delivery_status==='配送中'?'selected':''}>配送中</option>
                                     <option ${o.delivery_status==='已完成'?'selected':''}>已完成</option>
@@ -233,12 +224,12 @@
         }
 
         async function updateStatus(id, field, value) {
-            await supabase.from('orders').update({ [field]: value, updated_at: new Date().toISOString() }).eq('id', id);
+            await supabaseClient.from('orders').update({ [field]: value, updated_at: new Date().toISOString() }).eq('id', id);
             refreshData();
         }
 
         // 即時監聽
-        supabase.channel('any').on('postgres_changes', { event: '*', schema: 'public' }, () => refreshData()).subscribe();
+        supabaseClient.channel('any').on('postgres_changes', { event: '*', schema: 'public' }, () => refreshData()).subscribe();
         
         refreshData();
         function closeModal() { document.getElementById('order-modal').classList.add('hidden'); }
