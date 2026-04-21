@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>園遊會即時管理系統</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <style>
+        .floating-btn { position: fixed; right: 20px; bottom: 20px; z-index: 50; }
+        .order-card { transition: all 0.5s; }
+        .hidden-fade { opacity: 0; pointer-events: none; transform: scale(0.9); }
+    </style>
+</head>
+<body class="bg-gray-100 pb-20">
+
+    <div class="floating-btn flex flex-col gap-2">
+        <button onclick="showPage('home')" class="bg-blue-600 text-white p-4 rounded-full shadow-lg">🏠 首頁</button>
+        <button onclick="showPage('admin')" class="bg-green-600 text-white p-4 rounded-full shadow-lg">📊 管理</button>
+        <button onclick="showPage('delivery')" class="bg-orange-600 text-white p-4 rounded-full shadow-lg">🚚 配送</button>
+    </div>
+
+    <section id="page-home" class="p-4">
+        <h1 class="text-2xl font-bold mb-4">🏪 園遊會預購</h1>
+        <div id="product-list" class="grid grid-cols-2 md:grid-cols-3 gap-4">
+            </div>
+    </section>
+
+    <section id="page-admin" class="p-4 hidden">
+        <h1 class="text-2xl font-bold mb-4">📊 財務與庫存管理</h1>
+        <div class="bg-white p-4 rounded-lg shadow mb-4">
+            <p class="text-gray-600">預估總營業額</p>
+            <p id="total-revenue" class="text-3xl font-bold text-green-600">$0</p>
+        </div>
+        <div id="admin-orders" class="space-y-2">
+            </div>
+    </section>
+
+    <section id="page-delivery" class="p-4 hidden">
+        <h1 class="text-2xl font-bold mb-4">🚚 配送調度端</h1>
+        <div id="delivery-list" class="space-y-4">
+            </div>
+    </section>
+
+    <div id="order-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center p-4 z-[100]">
+        <div class="bg-white p-6 rounded-xl w-full max-w-md">
+            <h2 id="modal-title" class="text-xl font-bold mb-4">填寫預購資訊</h2>
+            <div class="space-y-3">
+                <input id="form-name" type="text" placeholder="姓名" class="w-full border p-2 rounded">
+                <div class="flex gap-2">
+                    <select id="form-class" class="flex-1 border p-2 rounded"></select>
+                    <select id="form-seat" class="flex-1 border p-2 rounded"></select>
+                </div>
+                <input id="form-loc" type="text" placeholder="配送地點 (例如：三樓走廊)" class="w-full border p-2 rounded">
+                <input id="form-qty" type="number" placeholder="數量" value="1" min="1" class="w-full border p-2 rounded">
+                <button onclick="submitOrder()" class="w-full bg-blue-600 text-white py-3 rounded-lg font-bold">確認下單</button>
+                <button onclick="closeModal()" class="w-full text-gray-500 py-2">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- 初始化 Supabase ---
+        const SUPABASE_URL = 'YOUR_SUPABASE_URL';
+        const SUPABASE_KEY = 'YOUR_SUPABASE_KEY';
+        const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        let products = [];
+        let currentProduct = null;
+
+        // --- 初始化下拉選單 (1-100) ---
+        const classSelect = document.getElementById('form-class');
+        const seatSelect = document.getElementById('form-seat');
+        for(let i=1; i<=100; i++) {
+            classSelect.options.add(new Option(`${i}班`, i));
+            seatSelect.options.add(new Option(`${i}號`, i));
+        }
+
+        // --- 頁面切換邏輯 ---
+        function showPage(pageId) {
+            ['home', 'admin', 'delivery'].forEach(p => {
+                document.getElementById(`page-${p}`).classList.add('hidden');
+            });
+            document.getElementById(`page-${pageId}`).classList.remove('hidden');
+            if(pageId === 'admin' || pageId === 'delivery') fetchOrders();
+        }
+
+        // --- 即時監聽與資料抓取 ---
+        async function fetchProducts() {
+            const { data } = await supabase.from('products').select('*');
+            products = data;
+            renderProducts();
+        }
+
+        function renderProducts() {
+            const list = document.getElementById('product-list');
+            list.innerHTML = products.map(p => `
+                <div class="bg-white rounded-lg shadow overflow-hidden">
+                    <img src="${p.image_url}" class="w-full h-32 object-cover">
+                    <div class="p-3">
+                        <h3 class="font-bold">${p.name}</h3>
+                        <p class="text-blue-600">$${p.price} (剩餘:${p.stock})</p>
+                        <button onclick="openOrderModal('${p.id}')" class="mt-2 w-full bg-blue-100 text-blue-700 py-1 rounded">預購</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // --- 下單邏輯 ---
+        function openOrderModal(id) {
+            currentProduct = products.find(p => p.id === id);
+            document.getElementById('modal-title').innerText = `預購 ${currentProduct.name}`;
+            document.getElementById('order-modal').classList.remove('hidden');
+        }
+
+        async function submitOrder() {
+            const qty = parseInt(document.getElementById('form-qty').value);
+            if(qty > currentProduct.stock) return alert('庫存不足！');
+
+            // 1. 扣庫存 2. 建訂單
+            await supabase.from('products').update({ stock: currentProduct.stock - qty }).eq('id', currentProduct.id);
+            await supabase.from('orders').insert([{
+                customer_name: document.getElementById('form-name').value,
+                class_name: document.getElementById('form-class').value,
+                seat_number: document.getElementById('form-seat').value,
+                location: document.getElementById('form-loc').value,
+                product_name: currentProduct.name,
+                quantity: qty,
+                total_price: currentProduct.price * qty,
+                image_url: currentProduct.image_url
+            }]);
+
+            alert('預購成功！');
+            closeModal();
+            fetchProducts();
+        }
+
+        // --- 配送與管理同步 ---
+        async function fetchOrders() {
+            const { data } = await supabase.from('orders').select('*').order('created_at', { ascending: false });
+            renderAdmin(data);
+            renderDelivery(data);
+        }
+
+        function renderDelivery(orders) {
+            const list = document.getElementById('delivery-list');
+            const now = Date.now();
+            list.innerHTML = orders.map(o => {
+                // 自動隱藏邏輯：已完成超過2分鐘
+                const isFinished = o.delivery_status === '已完成';
+                const timeDiff = now - new Date(o.updated_at || o.created_at).getTime();
+                if (isFinished && timeDiff > 120000) return ''; 
+
+                return `
+                    <div class="order-card bg-white p-4 rounded-lg shadow flex gap-4 ${isFinished ? 'opacity-50' : ''}">
+                        <img src="${o.image_url}" class="w-20 h-20 rounded object-cover">
+                        <div class="flex-1">
+                            <p class="font-bold">${o.class_name}班 ${o.seat_number}號 ${o.customer_name}</p>
+                            <p class="text-sm text-gray-500">📍 ${o.location}</p>
+                            <p class="text-sm text-blue-600">${o.product_name} x ${o.quantity}</p>
+                            <div class="mt-2 flex gap-2">
+                                <select onchange="updateStatus('${o.id}', 'payment_status', this.value)" class="text-xs border rounded p-1">
+                                    <option ${o.payment_status==='未付款'?'selected':''}>未付款</option>
+                                    <option ${o.payment_status==='已付款'?'selected':''}>已付款</option>
+                                </select>
+                                <select onchange="updateStatus('${o.id}', 'delivery_status', this.value)" class="text-xs border rounded p-1 bg-orange-50">
+                                    <option ${o.delivery_status==='未配送'?'selected':''}>未配送</option>
+                                    <option ${o.delivery_status==='配送中'?'selected':''}>配送中</option>
+                                    <option ${o.delivery_status==='已完成'?'selected':''}>已完成</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        async function updateStatus(id, field, value) {
+            await supabase.from('orders').update({ [field]: value, updated_at: new Date() }).eq('id', id);
+            fetchOrders(); // 更新後重新抓取數據
+        }
+
+        // 啟動即時監聽
+        supabase.channel('custom-all-channel')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => fetchOrders())
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, () => fetchProducts())
+            .subscribe();
+
+        fetchProducts();
+        function closeModal() { document.getElementById('order-modal').classList.add('hidden'); }
+    </script>
+</body>
+</html>
+
+
