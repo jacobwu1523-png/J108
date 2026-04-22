@@ -3,154 +3,122 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>HWHS 旗艦系統</title>
+    <title>HWHS 自動發卡商城</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap');
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
-        body { font-family: 'Noto Sans TC', sans-serif; background: #f8fafc; margin: 0; color: #1e293b; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { font-family: 'Noto Sans TC', sans-serif; background: #f1f5f9; margin: 0; color: #1e293b; }
 
-        .page { display: none; padding: 20px 16px 140px 16px; min-height: 100vh; }
-        .page.active { display: block; animation: fadeIn 0.2s ease; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .page { display: none; padding: 20px 12px 120px 12px; min-height: 100vh; }
+        .page.active { display: block; }
 
-        /* 卡牌分類樣式 */
-        .cat-card {
-            min-width: 90px; height: 50px; padding: 0 15px;
-            background: white; border-radius: 18px; border: 2px solid #e2e8f0;
-            display: flex; align-items: center; justify-content: center;
-            font-weight: 800; color: #64748b; transition: 0.2s; cursor: pointer;
-            flex-shrink: 0; font-size: 13px;
-        }
-        .cat-card.active { border-color: #3b82f6; color: #3b82f6; background: #eff6ff; }
-
+        /* 商品卡片縮小排版 */
+        .prod-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
+        
         .nav-bar {
-            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
-            width: 90%; max-width: 400px; height: 70px;
-            background: #0f172a; border-radius: 25px;
-            display: flex; align-items: center; justify-content: space-around;
-            padding: 5px; z-index: 1000; box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            position: fixed; bottom: 15px; left: 50%; transform: translateX(-50%);
+            width: 90%; max-width: 400px; height: 65px;
+            background: #0f172a; border-radius: 20px;
+            display: flex; align-items: center; justify-content: space-around; z-index: 1000;
         }
-        .nav-btn { flex: 1; height: 100%; display: flex; align-items: center; justify-content: center; color: #94a3b8; font-size: 13px; font-weight: 700; }
-        .nav-btn.active { color: #0f172a; background: #fff; border-radius: 20px; }
+        .nav-btn { flex: 1; text-align: center; color: #64748b; font-size: 12px; font-weight: 700; }
+        .nav-btn.active { color: #fff; }
 
-        #login-screen {
-            position: fixed; inset: 0; background: #0f172a; z-index: 2000;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            opacity: 0; pointer-events: none; transition: 0.3s;
+        /* 模擬支付畫面 */
+        .pay-screen {
+            position: fixed; inset: 0; background: white; z-index: 3000;
+            display: none; flex-direction: column; align-items: center; justify-content: center;
         }
-        #login-screen.show { opacity: 1; pointer-events: auto; }
+        .pay-screen.active { display: flex; animation: slideUp 0.3s ease-out; }
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
 
+        .payment-option {
+            border: 2px solid #f1f5f9; border-radius: 15px; padding: 15px;
+            display: flex; align-items: center; gap: 10px; transition: 0.2s;
+        }
+        .payment-option.selected { border-color: #3b82f6; background: #eff6ff; }
+        
         #toast {
             position: fixed; top: 30px; left: 50%; transform: translateX(-50%);
-            background: #1e293b; color: #fff; padding: 12px 24px;
-            border-radius: 50px; font-weight: 800; z-index: 3000; opacity: 0; transition: 0.3s;
+            background: rgba(0,0,0,0.8); color: #fff; padding: 10px 20px;
+            border-radius: 50px; font-size: 12px; z-index: 4000; opacity: 0; transition: 0.3s;
         }
-        #toast.show { opacity: 1; top: 40px; }
-        .no-scrollbar::-webkit-scrollbar { display: none; }
+        #toast.show { opacity: 1; }
     </style>
 </head>
 <body>
 
     <div id="toast">訊息</div>
 
-    <div id="login-screen">
-        <div class="w-full max-w-xs text-center p-6">
-            <div class="w-16 h-16 bg-blue-600 rounded-2xl mx-auto mb-6 flex items-center justify-center">
-                <span class="text-white text-3xl font-black">H.</span>
-            </div>
-            <h2 class="text-white text-xl font-black mb-6">身分驗證</h2>
-            <input id="pwd-input" type="password" placeholder="請輸入密碼" class="w-full bg-slate-800 border-0 rounded-xl p-4 text-center text-white mb-4">
-            <button onclick="handleLogin()" class="w-full bg-blue-600 text-white py-4 rounded-xl font-black mb-2">登入</button>
-            <button onclick="hideLogin()" class="w-full text-slate-500 py-2 text-sm font-bold">返回商店</button>
-        </div>
-    </div>
-
     <section id="page-home" class="page active">
-        <h1 class="text-3xl font-black mb-6 tracking-tight">HWHS STORE</h1>
-        <div id="category-container" class="flex gap-2 overflow-x-auto pb-4 no-scrollbar"></div>
-        <div id="product-list" class="grid grid-cols-2 gap-4"></div>
+        <div class="flex justify-between items-end mb-6">
+            <h1 class="text-2xl font-black tracking-tighter">CARD SHOP</h1>
+            <p class="text-[10px] font-bold text-slate-400">餘額: 90,000,000.00</p>
+        </div>
+        <div id="category-container" class="flex gap-2 overflow-x-auto pb-4 no-scrollbar mb-2"></div>
+        <div id="product-list" class="prod-grid"></div>
     </section>
 
     <section id="page-admin" class="page">
-        <div class="flex justify-between items-center mb-6">
-            <h1 class="text-3xl font-black">管理中心</h1>
-            <button onclick="exportToCSV()" class="bg-slate-200 px-3 py-1 rounded-lg text-xs font-bold">匯出</button>
+        <h1 class="text-2xl font-black mb-6">管理後台</h1>
+        <div class="bg-white p-4 rounded-2xl mb-4 shadow-sm border">
+            <h3 class="text-xs font-black text-slate-400 mb-3">總銷售統計</h3>
+            <div id="stat-revenue" class="text-2xl font-black">$0</div>
         </div>
-
-        <div class="bg-white p-4 rounded-2xl border mb-6">
-            <p class="text-xs font-bold text-slate-400 mb-2">分類管理</p>
-            <div class="flex gap-2 mb-3">
-                <input id="new-cat-name" type="text" placeholder="新分類" class="flex-1 bg-slate-100 p-2 rounded-lg text-sm border-0">
-                <button onclick="addCategory()" class="bg-blue-600 text-white px-4 rounded-lg font-bold">加</button>
-            </div>
-            <div id="admin-cat-list" class="flex flex-wrap gap-2"></div>
-        </div>
-
-        <div class="flex justify-between items-center mb-4">
-            <h2 class="text-lg font-black">商品庫存</h2>
-            <button onclick="openEditModal()" class="text-blue-600 font-bold text-sm">+ 新增</button>
-        </div>
-        <div id="admin-product-list" class="space-y-2 mb-8"></div>
-
-        <h2 class="text-lg font-black mb-4">訂單明細</h2>
-        <div id="admin-order-list" class="space-y-2"></div>
+        <div id="admin-product-list" class="space-y-2"></div>
     </section>
 
-    <section id="page-delivery" class="page">
-        <h1 class="text-3xl font-black mb-6">配送物流</h1>
-        <div id="delivery-list" class="space-y-4"></div>
+    <section id="page-cards" class="page">
+        <h1 class="text-2xl font-black mb-6">我的卡密</h1>
+        <div id="my-card-list" class="space-y-3"></div>
     </section>
 
     <nav class="nav-bar">
-        <div onclick="go('home')" id="n-home" class="nav-btn active">商店</div>
-        <div onclick="triggerLogin('admin')" id="n-admin" class="nav-btn">管理</div>
-        <div onclick="triggerLogin('delivery')" id="n-delivery" class="nav-btn">配送</div>
+        <div onclick="go('home')" id="n-home" class="nav-btn active">商城</div>
+        <div onclick="go('cards')" id="n-cards" class="nav-btn">我的卡密</div>
+        <div onclick="go('admin')" id="n-admin" class="nav-btn">管理</div>
     </nav>
 
-    <div id="buy-modal" class="fixed inset-0 bg-black/60 hidden backdrop-blur-sm z-[1500] flex items-center justify-center p-4">
+    <div id="buy-modal" class="fixed inset-0 bg-black/60 hidden z-[2000] flex items-center justify-center p-6 backdrop-blur-sm">
         <div class="bg-white w-full max-w-sm rounded-[30px] p-6 shadow-2xl">
-            <h2 id="m-buy-title" class="text-xl font-black mb-4"></h2>
-            <div class="space-y-3">
-                <input id="f-name" type="text" placeholder="姓名" class="w-full p-4 bg-slate-50 rounded-xl border-0">
-                <input id="f-location" type="text" placeholder="地點 (如: J101)" class="w-full p-4 bg-slate-50 rounded-xl border-0">
-                <div class="flex gap-2">
-                    <select id="f-class" class="flex-1 p-4 bg-slate-50 rounded-xl border-0"></select>
-                    <select id="f-seat" class="w-20 p-4 bg-slate-50 rounded-xl border-0"></select>
+            <h2 id="m-buy-title" class="text-xl font-black mb-1"></h2>
+            <p id="m-buy-price" class="text-blue-600 font-black mb-6"></p>
+            
+            <div class="space-y-3 mb-6">
+                <p class="text-[10px] font-bold text-slate-400 ml-1">選擇支付方式</p>
+                <div onclick="selectPay('wechat')" id="pay-wechat" class="payment-option selected">
+                    <img src="https://img.icons8.com/color/48/weixindetachable.png" class="w-8">
+                    <span class="font-bold">微信支付</span>
                 </div>
-                <div class="flex justify-between items-center bg-blue-50 p-4 rounded-xl">
-                    <input id="f-qty" type="number" value="1" min="1" oninput="recalcTotal()" class="w-12 bg-transparent font-black text-xl text-blue-600 outline-none">
-                    <p id="f-total-price" class="font-black text-2xl text-blue-600">$0</p>
+                <div onclick="selectPay('alipay')" id="pay-alipay" class="payment-option">
+                    <img src="https://img.icons8.com/color/48/alipay.png" class="w-8">
+                    <span class="font-bold">支付寶</span>
                 </div>
-                <button id="btn-submit-order" class="w-full bg-blue-600 text-white py-4 rounded-xl font-black shadow-lg">確認預訂</button>
-                <button onclick="closeModals()" class="w-full text-slate-300 font-bold py-2 text-sm">取消</button>
             </div>
+
+            <button onclick="startPay()" class="w-full bg-slate-900 text-white py-4 rounded-2xl font-black shadow-lg">確認付款</button>
+            <button onclick="closeModals()" class="w-full text-slate-300 font-bold py-2 mt-2 text-sm">取消</button>
         </div>
     </div>
 
-    <div id="edit-modal" class="fixed inset-0 bg-black/70 hidden backdrop-blur-sm z-[1500] flex items-center justify-center p-4">
-        <div class="bg-white w-full max-w-sm rounded-[30px] p-6 shadow-2xl overflow-y-auto max-h-[90vh]">
-            <h2 class="text-xl font-black mb-4">商品編輯</h2>
-            <div class="space-y-4">
-                <input id="e-id" type="hidden">
-                <input id="e-name" type="text" placeholder="品名" class="w-full p-3 bg-slate-50 rounded-lg border-0 font-bold">
-                <select id="e-category" class="w-full p-3 bg-slate-50 rounded-lg border-0 font-bold"></select>
-                <div class="grid grid-cols-2 gap-2">
-                    <div>
-                        <label class="text-[10px] font-bold text-slate-400">價格</label>
-                        <input id="e-price" type="number" class="w-full p-3 bg-slate-50 rounded-lg border-0 font-black">
-                    </div>
-                    <div>
-                        <label class="text-[10px] font-bold text-slate-400">庫存</label>
-                        <input id="e-stock" type="number" class="w-full p-3 bg-slate-50 rounded-lg border-0 font-black">
-                    </div>
-                </div>
-                <input id="e-img" type="text" placeholder="圖片連結" class="w-full p-3 bg-slate-50 rounded-lg border-0 text-xs">
-                <button onclick="saveProduct()" class="w-full bg-slate-900 text-white py-4 rounded-xl font-black">儲存</button>
-                <button id="btn-del-product" onclick="deleteProduct()" class="w-full text-red-400 font-bold text-xs">刪除商品</button>
-                <button onclick="closeModals()" class="w-full text-slate-300 font-bold text-xs uppercase tracking-widest">取消</button>
+    <div id="pay-screen" class="pay-screen">
+        <div id="pay-loading" class="text-center">
+            <div class="w-16 h-16 border-4 border-slate-200 border-t-blue-500 rounded-full animate-spin mx-auto mb-4"></div>
+            <p id="pay-text" class="font-black text-slate-800">正在安全支付中...</p>
+        </div>
+        <div id="pay-success" class="hidden text-center scale-110">
+            <div class="w-20 h-20 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-4 text-white text-4xl">✓</div>
+            <h2 class="text-2xl font-black mb-2">支付成功</h2>
+            <p class="text-slate-400 font-bold mb-6">已成功扣款 <span id="paid-amount"></span> 元</p>
+            <div class="bg-slate-50 p-4 rounded-2xl border-2 border-dashed border-slate-200 mb-6">
+                <p class="text-[10px] font-bold text-slate-400 mb-1 uppercase">您的卡密：</p>
+                <p id="new-card-code" class="font-black text-blue-600 text-lg tracking-widest"></p>
             </div>
+            <button onclick="copyNewCode()" class="bg-blue-600 text-white px-8 py-3 rounded-xl font-black mb-4">點擊複製卡密</button>
+            <br>
+            <button onclick="closePay()" class="text-slate-400 font-bold text-sm">回到商店</button>
         </div>
     </div>
 
@@ -159,196 +127,117 @@
         const SUPABASE_KEY = 'sb_publishable_8LJkxWG-tcL0PBPtDyreVw_HyqKSDNk';
         const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        const ADMIN_PWD = '@hwhs';
-        let isAdminLoggedIn = false;
-        let products = [], categories = [], orders = [];
-        let currentCat = '全部', pendingPage = 'home', currentP = null;
+        let products = [], categories = [], orders = [], myCards = [];
+        let currentP = null, selectedMethod = 'wechat';
 
         function toast(msg) {
             const t = document.getElementById('toast'); t.innerText = msg; t.classList.add('show');
             setTimeout(() => t.classList.remove('show'), 2000);
         }
 
-        // 登入邏輯
-        function triggerLogin(target) {
-            if (isAdminLoggedIn) go(target);
-            else { pendingPage = target; document.getElementById('login-screen').classList.add('show'); }
-        }
-        function handleLogin() {
-            if (document.getElementById('pwd-input').value === ADMIN_PWD) {
-                isAdminLoggedIn = true; document.getElementById('login-screen').classList.remove('show');
-                go(pendingPage);
-            } else toast("❌ 密碼錯誤");
-        }
-        function hideLogin() { document.getElementById('login-screen').classList.remove('show'); go('home'); }
-
-        // 資料刷新
         async function refresh() {
-            const { data: c } = await client.from('categories').select('*').order('name');
-            categories = c || [];
-            const { data: p } = await client.from('products').select('*').order('name');
+            const { data: p } = await client.from('products').select('*');
             products = p || [];
-            const { data: o } = await client.from('orders').select('*').order('created_at', {ascending: false});
-            orders = o || [];
-            
-            renderCats(); renderStore(); renderAdminP(); renderAdminOrders(); renderDelivery(); updateDropdown();
+            renderStore();
+            renderAdmin();
         }
-
-        function renderCats() {
-            const container = document.getElementById('category-container');
-            const list = ['全部', ...categories.map(c => c.name)];
-            container.innerHTML = list.map(name => `
-                <div onclick="setCategory('${name}')" class="cat-card ${currentCat === name ? 'active' : ''}">${name}</div>
-            `).join('');
-
-            document.getElementById('admin-cat-list').innerHTML = categories.map(c => `
-                <div class="bg-slate-100 px-3 py-1 rounded-full text-[10px] font-bold flex items-center">
-                    ${c.name} <button onclick="delCategory('${c.id}')" class="ml-2 text-red-400">×</button>
-                </div>
-            `).join('');
-        }
-
-        function setCategory(n) { currentCat = n; renderCats(); renderStore(); }
 
         function renderStore() {
-            const filtered = currentCat === '全部' ? products : products.filter(p => p.category === currentCat);
-            document.getElementById('product-list').innerHTML = filtered.map(p => `
-                <div class="bg-white p-3 rounded-3xl border border-white shadow-sm">
-                    <div class="aspect-square bg-slate-50 rounded-2xl overflow-hidden mb-3 flex items-center justify-center">
-                        <img src="${p.image_url}" class="max-w-full max-h-full object-contain">
+            document.getElementById('product-list').innerHTML = products.map(p => `
+                <div class="bg-white p-3 rounded-2xl border border-white shadow-sm flex flex-col">
+                    <div class="aspect-square bg-slate-50 rounded-xl overflow-hidden mb-2">
+                        <img src="${p.image_url}" class="w-full h-full object-contain">
                     </div>
-                    <p class="text-[9px] font-black text-blue-500 uppercase">${p.category || '一般'}</p>
-                    <p class="font-bold text-sm truncate">${p.name}</p>
-                    <p class="font-black text-lg">$${p.price}</p>
-                    <button onclick="openBuyModal('${p.id}')" ${p.stock <= 0 ? 'disabled' : ''} class="w-full mt-3 py-3 rounded-xl font-black text-[10px] ${p.stock <= 0 ? 'bg-slate-100 text-slate-300':'bg-slate-900 text-white shadow-md'}">
-                        ${p.stock <= 0 ? '已售完' : '預訂'}
+                    <p class="font-bold text-xs truncate mb-1">${p.name}</p>
+                    <p class="font-black text-blue-600 text-sm mb-3">$${p.price}</p>
+                    <button onclick="openBuyModal('${p.id}')" class="w-full bg-slate-100 text-slate-800 py-2 rounded-lg font-black text-[10px] active:scale-95 transition-all">
+                        立即購買
                     </button>
                 </div>
             `).join('');
         }
 
-        function renderAdminP() {
-            document.getElementById('admin-product-list').innerHTML = products.map(p => `
-                <div class="bg-white p-3 rounded-xl border flex items-center gap-3">
-                    <img src="${p.image_url}" class="w-10 h-10 rounded-lg object-contain bg-slate-50 border">
-                    <div class="flex-1">
-                        <p class="font-black text-xs">${p.name}</p>
-                        <p class="text-[9px] font-bold text-slate-400">庫存: ${p.stock} | $${p.price}</p>
-                    </div>
-                    <button onclick="openEditModal('${p.id}')" class="text-blue-500 font-black text-[10px]">編輯</button>
-                </div>
-            `).join('');
-        }
-
-        function renderAdminOrders() {
-            document.getElementById('admin-order-list').innerHTML = orders.slice(0, 10).map(x => `
-                <div class="bg-white p-3 rounded-xl border text-[11px]">
-                    <div class="flex justify-between font-black">
-                        <span>${x.customer_name}</span>
-                        <span>$${x.total_price}</span>
-                    </div>
-                    <p class="text-slate-400">${x.product_name} x${x.quantity}</p>
-                </div>
-            `).join('');
-        }
-
-        function renderDelivery() {
-            document.getElementById('delivery-list').innerHTML = orders.filter(x => x.delivery_status !== '已完成').map(x => `
-                <div class="bg-white p-5 rounded-3xl border shadow-sm">
-                    <p class="text-blue-600 font-black text-[10px] uppercase mb-1">${x.location || '教室'}</p>
-                    <p class="text-lg font-black">${x.class_name} - ${x.customer_name}</p>
-                    <p class="text-sm font-bold text-slate-400 mb-4">${x.product_name} x ${x.quantity}</p>
-                    <button onclick="updStatus('${x.id}','delivery_status','已完成')" class="w-full bg-slate-900 text-white py-3 rounded-xl font-black">完成配送</button>
-                </div>
-            `).join('');
-        }
-
-        // 功能函數
-        async function addCategory() {
-            const name = document.getElementById('new-cat-name').value;
-            if(!name) return;
-            await client.from('categories').insert([{name}]);
-            document.getElementById('new-cat-name').value = ''; refresh();
-        }
-        async function delCategory(id) {
-            if(confirm('確定刪除？')) { await client.from('categories').delete().eq('id', id); refresh(); }
-        }
-        function updateDropdown() {
-            const el = document.getElementById('e-category');
-            el.innerHTML = '<option value="">未分類</option>' + categories.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
-        }
-        window.openEditModal = (id) => {
-            if(id) {
-                const p = products.find(x => x.id === id);
-                document.getElementById('e-id').value = p.id;
-                document.getElementById('e-name').value = p.name;
-                document.getElementById('e-category').value = p.category || '';
-                document.getElementById('e-price').value = p.price;
-                document.getElementById('e-stock').value = p.stock;
-                document.getElementById('e-img').value = p.image_url;
-                document.getElementById('btn-del-product').style.display = 'block';
-            } else {
-                document.getElementById('e-id').value = '';
-                document.getElementById('e-name').value = '';
-                document.getElementById('btn-del-product').style.display = 'none';
-            }
-            document.getElementById('edit-modal').classList.remove('hidden');
-        };
-        window.saveProduct = async () => {
-            const data = { 
-                name: document.getElementById('e-name').value, 
-                category: document.getElementById('e-category').value,
-                price: parseInt(document.getElementById('e-price').value), 
-                stock: parseInt(document.getElementById('e-stock').value), 
-                image_url: document.getElementById('e-img').value 
-            };
-            const id = document.getElementById('e-id').value;
-            if(id) await client.from('products').update(data).eq('id', id);
-            else await client.from('products').insert([data]);
-            closeModals(); refresh();
-        };
-        window.openBuyModal = (id) => {
+        function openBuyModal(id) {
             currentP = products.find(x => x.id === id);
             document.getElementById('m-buy-title').innerText = currentP.name;
-            document.getElementById('f-qty').value = 1; recalcTotal();
+            document.getElementById('m-buy-price').innerText = `$ ${currentP.price} TWD`;
             document.getElementById('buy-modal').classList.remove('hidden');
-        };
-        document.getElementById('btn-submit-order').onclick = async () => {
-            const name = document.getElementById('f-name').value;
-            const loc = document.getElementById('f-location').value;
-            const qty = parseInt(document.getElementById('f-qty').value);
-            if(!name || !loc) return toast('⚠️ 姓名地點必填');
-            await client.from('products').update({ stock: currentP.stock - qty }).eq('id', currentP.id);
-            await client.from('orders').insert([{
-                customer_name: name, location: loc, class_name: document.getElementById('f-class').value,
-                seat_number: document.getElementById('f-seat').value, product_name: currentP.name,
-                quantity: qty, total_price: qty * currentP.price, payment_status: '未付款', delivery_status: '未配送'
-            }]);
-            toast('預訂成功'); closeModals(); refresh();
-        };
-        window.updStatus = async (id, f, v) => {
-            await client.from('orders').update({ [f]: v, completed_at: new Date().toISOString() }).eq('id', id);
-            refresh();
-        };
-        window.deleteProduct = async () => { if(confirm('刪除商品？')) { await client.from('products').delete().eq('id', document.getElementById('e-id').value); closeModals(); refresh(); }};
-        window.closeModals = () => document.querySelectorAll('.fixed').forEach(m => m.classList.add('hidden'));
-        window.recalcTotal = () => { document.getElementById('f-total-price').innerText = '$' + (document.getElementById('f-qty').value * currentP.price); };
-        window.go = (id) => {
+        }
+
+        function selectPay(method) {
+            selectedMethod = method;
+            document.querySelectorAll('.payment-option').forEach(el => el.classList.remove('selected'));
+            document.getElementById('pay-' + method).classList.add('selected');
+        }
+
+        function startPay() {
+            document.getElementById('buy-modal').classList.add('hidden');
+            const screen = document.getElementById('pay-screen');
+            screen.classList.add('active');
+            document.getElementById('pay-loading').classList.remove('hidden');
+            document.getElementById('pay-success').classList.add('hidden');
+            document.getElementById('pay-text').innerText = selectedMethod === 'wechat' ? '正在調用微信支付...' : '正在跳轉支付寶安全支付...';
+
+            setTimeout(() => {
+                document.getElementById('pay-loading').classList.add('hidden');
+                document.getElementById('pay-success').classList.remove('hidden');
+                const code = Array.from({length:18}, () => Math.floor(Math.random()*10)).join('');
+                document.getElementById('new-card-code').innerText = code;
+                document.getElementById('paid-amount').innerText = currentP.price;
+                
+                // 存入我的卡片
+                myCards.unshift({ name: currentP.name, code: code, date: new Date().toLocaleString() });
+                renderMyCards();
+            }, 2500);
+        }
+
+        function copyNewCode() {
+            const code = document.getElementById('new-card-code').innerText;
+            navigator.clipboard.writeText(code);
+            toast('✅ 卡密已複製');
+        }
+
+        function renderMyCards() {
+            document.getElementById('my-card-list').innerHTML = myCards.map(c => `
+                <div class="bg-white p-4 rounded-2xl border shadow-sm">
+                    <p class="font-black text-sm mb-1">${c.name}</p>
+                    <div class="flex justify-between items-center bg-slate-50 p-3 rounded-xl">
+                        <span class="text-blue-600 font-mono font-bold tracking-widest">${c.code}</span>
+                        <button onclick="copyCode('${c.code}')" class="text-[10px] bg-slate-900 text-white px-3 py-1 rounded-lg">複製</button>
+                    </div>
+                    <p class="text-[9px] text-slate-300 mt-2">購買時間: ${c.date}</p>
+                </div>
+            `).join('');
+        }
+
+        function copyCode(code) {
+            navigator.clipboard.writeText(code);
+            toast('✅ 已複製');
+        }
+
+        function closePay() { document.getElementById('pay-screen').classList.remove('active'); }
+        function closeModals() { document.getElementById('buy-modal').classList.add('hidden'); }
+
+        function go(id) {
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
             document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
             document.getElementById('page-'+id).classList.add('active');
             document.getElementById('n-'+id).classList.add('active');
-            refresh();
         }
-        function init() {
-            const cls = document.getElementById('f-class');
-            ['J','H'].forEach(t => { for(let g=1; g<=3; g++) { for(let r=1; r<=30; r++) { 
-                let v = `${t}${g}${r.toString().padStart(2,'0')}`; cls.add(new Option(v,v)); 
-            }}});
-            const seat = document.getElementById('f-seat');
-            for(let i=1; i<=50; i++) seat.add(new Option(i+'號', i));
+
+        function renderAdmin() {
+            document.getElementById('admin-product-list').innerHTML = products.map(p => `
+                <div class="bg-white p-3 rounded-xl border flex items-center gap-3">
+                    <img src="${p.image_url}" class="w-10 h-10 object-contain rounded bg-slate-50">
+                    <div class="flex-1">
+                        <p class="font-black text-xs">${p.name}</p>
+                        <p class="text-[10px] font-bold text-blue-500">$${p.price}</p>
+                    </div>
+                </div>
+            `).join('');
         }
-        init(); refresh();
+
+        refresh();
     </script>
 </body>
 </html>
