@@ -3,48 +3,48 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>HWHS 點餐配送系統</title>
+    <title>HWHS 管理系統</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap');
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
-        body { font-family: 'Noto Sans TC', sans-serif; background: #f8fafc; margin: 0; color: #1e293b; }
+        body { font-family: 'Noto Sans TC', sans-serif; background: #f1f5f9; margin: 0; color: #0f172a; }
 
-        /* 內容區塊底部留白，防止被導航欄遮住 */
-        .page { display: none; padding: 20px 16px 180px 16px; min-height: 100vh; }
-        .page.active { display: block; animation: slideUp 0.3s ease-out; }
-        @keyframes slideUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+        .page { display: none; padding: 20px 16px 200px 16px; min-height: 100vh; }
+        .page.active { display: block; animation: fadeIn 0.3s ease; }
 
-        /* 全屏毛玻璃彈窗 */
         .modal-overlay {
-            position: fixed; inset: 0; background: rgba(15, 23, 42, 0.7);
-            backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-            z-index: 2000; display: none; align-items: center; justify-content: center; padding: 12px;
+            position: fixed; inset: 0; background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+            z-index: 2000; display: none; align-items: center; justify-content: center; padding: 15px;
         }
         .modal-overlay.active { display: flex; }
         .modal-content {
-            background: white; width: 100%; max-width: 420px; border-radius: 35px;
-            padding: 28px; max-height: 90vh; overflow-y: auto; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
+            background: white; width: 100%; max-width: 450px; border-radius: 35px;
+            padding: 30px; max-height: 85vh; overflow-y: auto;
         }
 
-        /* 底部導航欄 */
         .nav-bar {
-            position: fixed; bottom: 25px; left: 50%; transform: translateX(-50%);
-            width: 90%; max-width: 380px; height: 75px;
+            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+            width: 92%; max-width: 400px; height: 75px;
             background: #0f172a; border-radius: 25px;
             display: flex; align-items: center; justify-content: space-around;
-            padding: 6px; z-index: 1000; box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+            padding: 5px; z-index: 1000; box-shadow: 0 15px 35px rgba(0,0,0,0.4);
         }
-        .nav-btn { flex: 1; height: 100%; display: flex; align-items: center; justify-content: center; color: #94a3b8; font-size: 13px; font-weight: 800; transition: 0.3s; }
+        .nav-btn { flex: 1; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #64748b; font-size: 11px; font-weight: 800; }
         .nav-btn.active { color: #0f172a; background: #fff; border-radius: 20px; }
 
+        .input-main { width: 100%; padding: 16px; background: #f8fafc; border-radius: 20px; border: 2px solid #e2e8f0; font-weight: 700; transition: 0.2s; }
+        .input-main:focus { border-color: #3b82f6; background: #fff; }
+        
         #toast {
-            position: fixed; top: 40px; left: 50%; transform: translateX(-50%);
-            background: #1e293b; color: #fff; padding: 14px 28px;
-            border-radius: 20px; font-weight: 800; z-index: 3000; opacity: 0; transition: 0.3s;
+            position: fixed; top: 30px; left: 50%; transform: translateX(-50%);
+            background: #1e293b; color: white; padding: 12px 25px; border-radius: 50px;
+            z-index: 5000; opacity: 0; transition: 0.3s; font-weight: 900;
         }
-        #toast.show { opacity: 1; top: 50px; }
+        #toast.show { opacity: 1; transform: translateX(-50%) translateY(10px); }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     </style>
 </head>
 <body>
@@ -52,99 +52,107 @@
     <div id="toast">訊息</div>
 
     <section id="page-home" class="page active">
-        <h1 class="text-3xl font-black mb-6 tracking-tighter">HWHS STORE</h1>
-        <div id="category-container" class="flex gap-2 overflow-x-auto pb-4 no-scrollbar mb-2"></div>
-        <div id="product-list" class="grid grid-cols-2 gap-3"></div>
+        <div class="flex justify-between items-end mb-8">
+            <h1 class="text-4xl font-black tracking-tighter">HWHS<span class="text-blue-600">.</span></h1>
+            <p class="text-[10px] font-black text-slate-400 bg-white px-3 py-1 rounded-full shadow-sm">v4.0 PRO</p>
+        </div>
+        <div id="category-container" class="flex gap-2 overflow-x-auto pb-6 no-scrollbar"></div>
+        <div id="product-list" class="grid grid-cols-2 gap-4"></div>
     </section>
 
     <section id="page-delivery" class="page">
-        <h1 class="text-2xl font-black mb-6">配送中心</h1>
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-2xl font-black">配送清單</h1>
+            <button onclick="exportOrders()" class="bg-blue-600 text-white text-[10px] font-black px-4 py-2 rounded-xl shadow-lg">導出文字</button>
+        </div>
         <div id="delivery-list" class="space-y-4"></div>
     </section>
 
     <section id="page-admin" class="page">
-        <h1 class="text-2xl font-black mb-6">系統管理</h1>
+        <h1 class="text-2xl font-black mb-6">控制台</h1>
         
-        <div class="bg-white p-6 rounded-3xl border border-slate-100 mb-6 shadow-sm">
-            <p class="text-[10px] font-black text-slate-400 mb-4 tracking-widest uppercase">分類設置</p>
-            <div class="flex gap-2 mb-4">
-                <input id="new-cat-name" type="text" placeholder="輸入名稱" class="flex-1 bg-slate-100 p-4 rounded-2xl text-sm border-0 font-bold">
+        <div class="bg-white p-6 rounded-[30px] shadow-sm mb-6">
+            <p class="text-[10px] font-black text-slate-300 uppercase mb-3">分類編輯 (全手動)</p>
+            <div class="flex gap-2">
+                <input id="new-cat-name" type="text" placeholder="輸入新分類名稱..." class="flex-1 bg-slate-50 p-4 rounded-2xl font-bold text-sm">
                 <button onclick="addCategory()" class="bg-blue-600 text-white px-6 rounded-2xl font-black">新增</button>
             </div>
-            <div id="admin-cat-list" class="flex flex-wrap gap-2"></div>
+            <div id="admin-cat-list" class="flex flex-wrap gap-2 mt-4"></div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3 mb-6">
+            <div class="bg-slate-900 p-5 rounded-[25px] text-white">
+                <p class="text-[10px] opacity-50 font-bold">總營收預估</p>
+                <h3 id="stat-revenue" class="text-2xl font-black">$0</h3>
+            </div>
+            <div class="bg-white p-5 rounded-[25px] border-2 border-blue-50">
+                <p class="text-[10px] text-slate-400 font-bold">待配送件數</p>
+                <h3 id="stat-count" class="text-2xl font-black text-blue-600">0</h3>
+            </div>
         </div>
 
         <div class="flex justify-between items-center mb-4">
-            <h2 class="text-lg font-black">庫存清單</h2>
-            <button onclick="openEditModal()" class="text-blue-600 font-bold">+ 新增商品</button>
+            <h2 class="text-lg font-black">所有商品庫存</h2>
+            <button onclick="openEditModal()" class="bg-slate-900 text-white text-[10px] px-4 py-2 rounded-full font-black">新增商品</button>
         </div>
         <div id="admin-product-list" class="space-y-3"></div>
     </section>
 
     <nav class="nav-bar">
-        <div onclick="go('home')" id="n-home" class="nav-btn active">商店</div>
-        <div onclick="go('delivery')" id="n-delivery" class="nav-btn">配送</div>
-        <div onclick="go('admin')" id="n-admin" class="nav-btn">管理</div>
+        <div onclick="go('home')" id="n-home" class="nav-btn active"><span>商店</span></div>
+        <div onclick="go('delivery')" id="n-delivery" class="nav-btn"><span>配送</span></div>
+        <div onclick="go('admin')" id="n-admin" class="nav-btn"><span>管理</span></div>
     </nav>
 
     <div id="buy-modal" class="modal-overlay">
         <div class="modal-content">
-            <h2 id="m-buy-title" class="text-2xl font-black mb-1 text-slate-800"></h2>
+            <h2 id="m-buy-title" class="text-2xl font-black text-slate-800 mb-1"></h2>
             <p id="m-buy-price" class="text-blue-600 font-black mb-6"></p>
             
-            <div class="space-y-4 mb-6">
+            <div class="space-y-4">
                 <div class="grid grid-cols-2 gap-3">
-                    <input id="f-class" type="text" placeholder="班級 (如: J102)" class="w-full p-4 bg-slate-50 rounded-2xl border-0 font-bold">
-                    <input id="f-no" type="number" placeholder="座號" class="w-full p-4 bg-slate-50 rounded-2xl border-0 font-bold">
+                    <input id="f-class" type="text" placeholder="班級 (J102)" class="input-main">
+                    <input id="f-no" type="number" placeholder="座號" class="input-main">
                 </div>
-                <input id="f-name" type="text" placeholder="姓名" class="w-full p-4 bg-slate-50 rounded-2xl border-0 font-bold">
+                <input id="f-name" type="text" placeholder="真實姓名" class="input-main">
+                <input id="f-loc" type="text" placeholder="取貨點 (如: J棟門口)" class="input-main">
                 
-                <div>
-                    <label class="text-[10px] font-black text-slate-400 ml-1">取貨地點</label>
-                    <select id="f-loc" class="w-full p-4 bg-slate-50 rounded-2xl border-0 font-bold mt-1">
-                        <option value="J棟川堂">J 棟川堂</option>
-                        <option value="合作社門口">合作社門口</option>
-                        <option value="班級外送區">班級外送區</option>
-                        <option value="其餘指定地點">其餘指定地點</option>
-                    </select>
-                </div>
-
-                <div class="bg-blue-50 p-4 rounded-2xl flex justify-between items-center">
-                    <span class="text-sm font-bold text-blue-800">購買數量</span>
-                    <div class="flex items-center gap-4">
-                        <button onclick="adjQty(-1)" class="w-8 h-8 bg-white rounded-lg font-black">-</button>
-                        <span id="f-qty" class="font-black text-xl">1</span>
-                        <button onclick="adjQty(1)" class="w-8 h-8 bg-white rounded-lg font-black">+</button>
+                <div class="bg-blue-50 p-5 rounded-[25px] flex justify-between items-center">
+                    <span class="font-black text-blue-800">數量</span>
+                    <div class="flex items-center gap-6">
+                        <button onclick="adjQty(-1)" class="w-10 h-10 bg-white rounded-xl font-black shadow-sm">-</button>
+                        <span id="f-qty" class="text-2xl font-black">1</span>
+                        <button onclick="adjQty(1)" class="w-10 h-10 bg-white rounded-xl font-black shadow-sm">+</button>
                     </div>
                 </div>
+                
+                <button onclick="submitOrder()" class="w-full bg-slate-900 text-white py-5 rounded-[25px] font-black shadow-xl mt-4 active:scale-95 transition-transform">送出預訂訂單</button>
+                <button onclick="closeModals()" class="w-full text-slate-300 font-bold py-2 text-xs">取消</button>
             </div>
-
-            <button onclick="submitOrder()" class="w-full bg-slate-900 text-white py-5 rounded-[22px] font-black shadow-lg">確認送出訂單</button>
-            <button onclick="closeModals()" class="w-full text-slate-300 font-bold py-3 text-xs">取消</button>
         </div>
     </div>
 
     <div id="edit-modal" class="modal-overlay">
         <div class="modal-content">
-            <h2 class="text-xl font-black mb-6">編輯商品內容</h2>
+            <h2 class="text-xl font-black mb-6">商品編輯</h2>
             <div class="space-y-4">
                 <input id="e-id" type="hidden">
-                <input id="e-name" type="text" placeholder="商品名稱" class="w-full p-4 bg-slate-50 rounded-2xl border-0 font-bold">
-                <select id="e-category" class="w-full p-4 bg-slate-50 rounded-2xl border-0 font-bold"></select>
+                <input id="e-name" type="text" placeholder="商品名稱" class="input-main">
+                <input id="e-category" type="text" placeholder="分類名稱 (需與現有分類一致)" class="input-main">
                 <div class="grid grid-cols-2 gap-3">
                     <div class="bg-blue-50 p-4 rounded-2xl">
                         <label class="text-[10px] font-bold text-blue-400">售價</label>
-                        <input id="e-price" type="number" class="w-full bg-transparent font-black text-xl text-blue-600 outline-none">
+                        <input id="e-price" type="number" class="w-full bg-transparent font-black text-xl text-blue-600">
                     </div>
                     <div class="bg-orange-50 p-4 rounded-2xl">
                         <label class="text-[10px] font-bold text-orange-400">庫存</label>
-                        <input id="e-stock" type="number" class="w-full bg-transparent font-black text-xl text-orange-600 outline-none">
+                        <input id="e-stock" type="number" class="w-full bg-transparent font-black text-xl text-orange-600">
                     </div>
                 </div>
-                <input id="e-img" type="text" placeholder="圖片連結" class="w-full p-4 bg-slate-50 rounded-2xl border-0 text-xs">
-                <button onclick="saveProduct()" class="w-full bg-blue-600 text-white py-4 rounded-2xl font-black shadow-lg">儲存</button>
+                <input id="e-img" type="text" placeholder="圖片連結 (URL)" class="input-main text-xs">
+                <button onclick="saveProduct()" class="w-full bg-blue-600 text-white py-4 rounded-[20px] font-black shadow-lg">儲存項目</button>
                 <button id="btn-del" onclick="deleteProduct()" class="w-full text-red-400 font-bold py-2 text-xs">刪除商品</button>
-                <button onclick="closeModals()" class="w-full text-slate-300 font-bold py-2 text-xs">取消</button>
+                <button onclick="closeModals()" class="w-full text-slate-300 font-bold py-2 text-xs">關閉</button>
             </div>
         </div>
     </div>
@@ -154,7 +162,7 @@
         const SUPABASE_KEY = 'sb_publishable_8LJkxWG-tcL0PBPtDyreVw_HyqKSDNk';
         const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        let products = [], categories = [], orders = [], currentCat = '全部', currentP = null, orderQty = 1;
+        let products = [], categories = [], orders = [], currentCat = '全部', orderQty = 1;
 
         function toast(msg) {
             const t = document.getElementById('toast'); t.innerText = msg; t.classList.add('show');
@@ -162,6 +170,7 @@
         }
 
         async function refresh() {
+            // 獲取數據
             const { data: c } = await client.from('categories').select('*').order('name');
             categories = c || [];
             const { data: p } = await client.from('products').select('*').order('name');
@@ -169,34 +178,40 @@
             const { data: o } = await client.from('orders').select('*').order('created_at', {ascending: false});
             orders = o || [];
 
-            renderCats(); renderStore(); renderAdminP(); renderDelivery(); updateDropdown();
+            renderCats(); renderStore(); renderAdminP(); renderDelivery();
+            
+            // 統計數據
+            const rev = orders.reduce((s, x) => s + (x.total_price || 0), 0);
+            const pend = orders.filter(x => x.delivery_status !== '已完成').length;
+            document.getElementById('stat-revenue').innerText = '$' + rev;
+            document.getElementById('stat-count').innerText = pend;
         }
 
         function renderCats() {
             const container = document.getElementById('category-container');
             const list = ['全部', ...categories.map(c => c.name)];
             container.innerHTML = list.map(name => `
-                <div onclick="setCategory('${name}')" class="px-5 py-3 bg-white rounded-2xl font-black text-xs shadow-sm border-2 ${currentCat === name ? 'border-blue-500 text-blue-500' : 'border-transparent text-slate-400'} flex-shrink-0 cursor-pointer">
+                <div onclick="setCategory('${name}')" class="px-6 py-3 bg-white rounded-2xl font-black text-xs shadow-sm border-2 ${currentCat === name ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-400'} flex-shrink-0 cursor-pointer transition-all">
                     ${name}
                 </div>`).join('');
             
             document.getElementById('admin-cat-list').innerHTML = categories.map(c => `
-                <div class="bg-slate-100 pl-4 pr-2 py-2 rounded-xl text-xs font-black flex items-center">
-                    ${c.name} <button onclick="delCategory('${c.id}')" class="ml-2 text-red-500 bg-white w-6 h-6 rounded-lg shadow-sm">×</button>
+                <div class="bg-slate-100 pl-4 pr-2 py-2 rounded-2xl text-[11px] font-black flex items-center shadow-sm">
+                    ${c.name} <button onclick="delCategory('${c.id}')" class="ml-2 bg-white text-red-500 w-6 h-6 rounded-lg flex items-center justify-center">×</button>
                 </div>`).join('');
         }
 
         function renderStore() {
             const filtered = currentCat === '全部' ? products : products.filter(p => p.category === currentCat);
             document.getElementById('product-list').innerHTML = filtered.map(p => `
-                <div class="bg-white p-3 rounded-[30px] border shadow-sm flex flex-col active:scale-95 transition-transform">
-                    <div class="aspect-square bg-slate-50 rounded-[25px] overflow-hidden mb-3">
-                        <img src="${p.image_url}" class="w-full h-full object-contain p-2">
+                <div class="bg-white p-3 rounded-[35px] shadow-sm flex flex-col active:scale-95 transition-transform border border-white">
+                    <div class="aspect-square bg-slate-50 rounded-[30px] overflow-hidden mb-3 p-3">
+                        <img src="${p.image_url}" class="w-full h-full object-contain">
                     </div>
-                    <p class="font-black text-xs text-slate-800 px-1 truncate">${p.name}</p>
-                    <div class="flex justify-between items-center mt-3 px-1">
+                    <p class="font-black text-xs text-slate-800 px-2 truncate">${p.name}</p>
+                    <div class="flex justify-between items-center mt-3 px-2 pb-1">
                         <p class="font-black text-blue-600 text-sm">$${p.price}</p>
-                        <button onclick="openBuyModal('${p.id}')" class="bg-slate-900 text-white w-8 h-8 rounded-xl font-black">+</button>
+                        <button onclick="openBuyModal('${p.id}')" class="bg-slate-900 text-white w-9 h-9 rounded-2xl font-black flex items-center justify-center">+</button>
                     </div>
                 </div>`).join('');
         }
@@ -204,37 +219,29 @@
         function renderDelivery() {
             const list = orders.filter(o => o.delivery_status !== '已完成');
             document.getElementById('delivery-list').innerHTML = list.map(o => `
-                <div class="bg-white p-5 rounded-3xl border shadow-sm relative overflow-hidden">
-                    <div class="flex justify-between items-center mb-4">
+                <div class="bg-white p-6 rounded-[30px] shadow-sm border-l-4 border-blue-500">
+                    <div class="flex justify-between items-start mb-4">
                         <div>
-                            <p class="text-[10px] font-black text-blue-500 uppercase">${o.location}</p>
-                            <h3 class="text-lg font-black">${o.class} | ${o.no}號 ${o.customer_name}</h3>
+                            <p class="text-[10px] font-black text-blue-500 uppercase tracking-widest">${o.location}</p>
+                            <h3 class="text-xl font-black">${o.class} | ${o.no}號 ${o.customer_name}</h3>
                         </div>
-                        <span class="bg-orange-50 text-orange-500 text-[10px] font-black px-3 py-1 rounded-full">處理中</span>
                     </div>
                     <div class="bg-slate-50 p-4 rounded-2xl mb-4">
-                        <p class="text-sm font-bold">${o.product_name} <span class="text-blue-600">x${o.quantity}</span></p>
+                        <p class="text-sm font-bold text-slate-600">${o.product_name} <span class="text-blue-600 font-black">x${o.quantity}</span></p>
                     </div>
-                    <button onclick="finishOrder('${o.id}')" class="w-full bg-slate-900 text-white py-4 rounded-2xl font-black text-sm shadow-lg">標記為已配送</button>
-                </div>`).join(list.length ? '' : '<p class="text-center text-slate-300 font-bold py-10">目前無待配送單</p>');
+                    <button onclick="finishOrder('${o.id}')" class="w-full bg-slate-900 text-white py-4 rounded-2xl font-black text-sm">確認配送完成</button>
+                </div>`).join(list.length ? '' : '<p class="text-center text-slate-300 font-bold py-20">沒有訂單需要配送</p>');
         }
 
         async function addCategory() {
             const name = document.getElementById('new-cat-name').value.trim();
             if(!name) return;
-            // 預防重複
-            if(categories.some(c => c.name === name)) return toast('⚠️ 分類已存在');
-            
             const { error } = await client.from('categories').insert([{ name }]);
-            if(error) { toast('❌ 錯誤: ' + error.message); }
-            else { 
-                document.getElementById('new-cat-name').value = ''; 
-                await refresh(); 
-                toast('✅ 分類新增成功'); 
-            }
+            if(error) toast('❌ RLS權限或重複錯誤');
+            else { document.getElementById('new-cat-name').value = ''; refresh(); toast('✅ 分類成功'); }
         }
 
-        async function delCategory(id) { if(confirm('刪除分類？')) { await client.from('categories').delete().eq('id', id); refresh(); } }
+        async function delCategory(id) { if(confirm('確定刪除？')) { await client.from('categories').delete().eq('id', id); refresh(); } }
 
         function openBuyModal(id) {
             currentP = products.find(x => x.id === id);
@@ -245,34 +252,42 @@
             document.getElementById('buy-modal').classList.add('active');
         }
 
-        function adjQty(v) {
-            orderQty = Math.max(1, orderQty + v);
-            document.getElementById('f-qty').innerText = orderQty;
-        }
+        function adjQty(v) { orderQty = Math.max(1, orderQty + v); document.getElementById('f-qty').innerText = orderQty; }
 
         async function submitOrder() {
             const cls = document.getElementById('f-class').value;
             const no = document.getElementById('f-no').value;
             const name = document.getElementById('f-name').value;
             const loc = document.getElementById('f-loc').value;
-            if(!cls || !no || !name) return toast('⚠️ 請填齊班級座號姓名');
-            if(orderQty > currentP.stock) return toast('❌ 庫存不足');
+            if(!cls || !no || !name || !loc) return toast('⚠️ 請全部填寫！');
 
             await client.from('products').update({ stock: currentP.stock - orderQty }).eq('id', currentP.id);
             await client.from('orders').insert([{
                 class: cls, no: no, customer_name: name, location: loc,
                 product_name: currentP.name, quantity: orderQty, 
-                total_price: orderQty * currentP.price, delivery_status: '未完成'
+                total_price: orderQty * currentP.price, delivery_status: '待處理'
             }]);
-            toast('🎉 訂購成功！'); closeModals(); refresh();
+            toast('🎉 訂單已發出！'); closeModals(); refresh();
         }
 
         async function finishOrder(id) {
             await client.from('orders').update({ delivery_status: '已完成' }).eq('id', id);
-            toast('🚚 配送完成'); refresh();
+            toast('🚚 配送已更新'); refresh();
         }
 
-        window.openEditModal = (id) => {
+        function renderAdminP() {
+            document.getElementById('admin-product-list').innerHTML = products.map(p => `
+                <div class="bg-white p-4 rounded-2xl shadow-sm flex items-center gap-4">
+                    <img src="${p.image_url}" class="w-12 h-12 object-contain rounded-xl bg-slate-50">
+                    <div class="flex-1">
+                        <p class="font-black text-sm text-slate-800">${p.name}</p>
+                        <p class="text-[9px] font-bold text-slate-400">${p.category} | 庫存: ${p.stock}</p>
+                    </div>
+                    <button onclick="openEditModal('${p.id}')" class="bg-slate-100 text-slate-900 font-black text-[10px] px-4 py-2 rounded-xl">編輯</button>
+                </div>`).join('');
+        }
+
+        function openEditModal(id) {
             const p = id ? products.find(x => x.id === id) : { id: '', name: '', category: '', price: 0, stock: 0, image_url: '' };
             document.getElementById('e-id').value = p.id;
             document.getElementById('e-name').value = p.name;
@@ -282,25 +297,30 @@
             document.getElementById('e-img').value = p.image_url;
             document.getElementById('btn-del').style.display = id ? 'block' : 'none';
             document.getElementById('edit-modal').classList.add('active');
-        };
+        }
 
-        window.saveProduct = async () => {
+        async function saveProduct() {
             const data = { 
                 name: document.getElementById('e-name').value, 
                 category: document.getElementById('e-category').value,
-                price: parseInt(document.getElementById('e-price').value) || 0,
-                stock: parseInt(document.getElementById('e-stock').value) || 0,
+                price: parseInt(document.getElementById('e-price').value),
+                stock: parseInt(document.getElementById('e-stock').value),
                 image_url: document.getElementById('e-img').value
             };
             const id = document.getElementById('e-id').value;
             if(id) await client.from('products').update(data).eq('id', id);
             else await client.from('products').insert([data]);
-            closeModals(); refresh(); toast('💾 資料儲存成功');
-        };
+            closeModals(); refresh(); toast('💾 儲存成功');
+        }
 
-        window.updateDropdown = () => {
-            document.getElementById('e-category').innerHTML = '<option value="">選擇分類</option>' + categories.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
-        };
+        function exportOrders() {
+            const text = orders.filter(o => o.delivery_status !== '已完成').map(o => `📍${o.location}\n👤${o.class}-${o.no} ${o.customer_name}\n📦${o.product_name} x${o.quantity}\n---`).join('\n');
+            if(!text) return toast('沒有訂單');
+            navigator.clipboard.writeText(text);
+            toast('📋 訂單已複製到剪貼簿');
+        }
+
+        async function deleteProduct() { if(confirm('刪除？')) { await client.from('products').delete().eq('id', document.getElementById('e-id').value); closeModals(); refresh(); } }
         window.closeModals = () => document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('active'));
         window.setCategory = (n) => { currentCat = n; renderCats(); renderStore(); };
         window.go = (id) => {
