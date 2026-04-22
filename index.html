@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>校園預購系統-專業管理版</title>
+    <title>校園預購 Pro - 安全管理版</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap');
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body { font-family: 'Noto Sans TC', sans-serif; background: #f1f5f9; margin: 0; color: #1e293b; overflow-x: hidden; }
+        body { font-family: 'Noto Sans TC', sans-serif; background: #f8fafc; margin: 0; color: #1e293b; }
 
         .page { display: none; padding: 20px 16px 120px 16px; min-height: 100vh; }
         .page.active { display: block; animation: fadeIn 0.2s ease; }
@@ -17,21 +17,20 @@
 
         .nav-bar {
             position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%);
-            width: 95%; max-width: 500px; height: 64px;
-            background: #0f172a; border-radius: 20px;
+            width: 95%; max-width: 500px; height: 68px;
+            background: #0f172a; border-radius: 24px;
             display: flex; align-items: center; justify-content: space-around;
-            padding: 4px; z-index: 999; box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+            padding: 6px; z-index: 999; box-shadow: 0 20px 40px rgba(0,0,0,0.3);
         }
-        .nav-btn { flex: 1; height: 100%; display: flex; align-items: center; justify-content: center; color: #64748b; font-size: 13px; font-weight: 700; cursor: pointer; }
-        .nav-btn.active { color: #0f172a; background: #fff; border-radius: 16px; }
+        .nav-btn { flex: 1; height: 100%; display: flex; align-items: center; justify-content: center; color: #94a3b8; font-size: 14px; font-weight: 700; cursor: pointer; }
+        .nav-btn.active { color: #0f172a; background: #fff; border-radius: 18px; }
 
-        /* 篩選按鈕樣式 */
-        .filter-btn { padding: 6px 14px; border-radius: 10px; font-size: 12px; font-weight: bold; background: #fff; color: #64748b; border: 1px solid #e2e8f0; transition: 0.2s; }
-        .filter-btn.active { background: #0f172a; color: #fff; border-color: #0f172a; }
+        .filter-btn { padding: 8px 16px; border-radius: 12px; font-size: 12px; font-weight: 800; background: #fff; color: #64748b; border: 1px solid #e2e8f0; white-space: nowrap; }
+        .filter-btn.active { background: #3b82f6; color: #fff; border-color: #3b82f6; }
 
         #toast {
             position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
-            background: #0f172a; color: #fff; padding: 12px 24px;
+            background: #0f172a; color: #fff; padding: 14px 28px;
             border-radius: 50px; font-weight: bold; z-index: 2000; opacity: 0; transition: 0.3s; pointer-events: none;
         }
         #toast.show { opacity: 1; top: 40px; }
@@ -39,31 +38,36 @@
 </head>
 <body>
 
-    <div id="toast">訊息通知</div>
+    <div id="toast">提醒文字</div>
 
     <section id="page-home" class="page active">
-        <h1 class="text-3xl font-black mb-6">SHOP.</h1>
-        <div id="product-list" class="grid grid-cols-2 gap-3 sm:grid-cols-3"></div>
+        <h1 class="text-4xl font-black mb-8 tracking-tighter">MARKET.</h1>
+        <div id="product-list" class="grid grid-cols-2 gap-4 sm:grid-cols-3"></div>
     </section>
 
     <section id="page-admin" class="page">
-        <h1 class="text-3xl font-black mb-4">ADMIN.</h1>
+        <div class="flex justify-between items-end mb-6">
+            <h1 class="text-4xl font-black tracking-tighter">ADMIN.</h1>
+            <button onclick="exportToCSV()" class="text-xs bg-green-100 text-green-700 px-3 py-1 rounded-lg font-bold">導出 CSV</button>
+        </div>
         
-        <div class="bg-indigo-600 p-6 rounded-3xl text-white shadow-lg mb-6">
-            <p class="text-[10px] font-bold opacity-70 uppercase">總預算營收</p>
-            <h2 id="total-revenue" class="text-4xl font-black">$0</h2>
+        <div class="bg-slate-900 p-6 rounded-[32px] text-white shadow-xl mb-8 relative overflow-hidden">
+            <div class="relative z-10">
+                <p class="text-[10px] font-bold opacity-50 uppercase tracking-[3px] mb-1">預估總營收</p>
+                <h2 id="total-revenue" class="text-5xl font-black tracking-tighter">$0</h2>
+            </div>
         </div>
 
         <div class="flex justify-between items-center mb-4">
-            <h2 class="text-lg font-black">商品庫存管理</h2>
-            <button onclick="openEditModal()" class="bg-black text-white px-3 py-1.5 rounded-lg text-xs font-bold">+ 新增</button>
+            <h2 class="text-xl font-black">商品庫存</h2>
+            <button onclick="openEditModal()" class="bg-blue-600 text-white px-4 py-2 rounded-xl text-xs font-black">+ 新增商品</button>
         </div>
-        <div id="admin-product-list" class="space-y-2 mb-8"></div>
+        <div id="admin-product-list" class="space-y-3 mb-12"></div>
 
-        <hr class="mb-8 border-slate-200">
-
-        <h2 class="text-lg font-black mb-3">訂單篩選系統</h2>
-        <div class="flex gap-2 overflow-x-auto pb-4 no-scrollbar">
+        <h2 class="text-xl font-black mb-4">訂單搜尋</h2>
+        <input type="text" id="order-search" oninput="renderAdminOrders()" placeholder="搜尋姓名或地點..." class="w-full p-4 bg-white border border-slate-200 rounded-2xl mb-4 text-sm outline-none">
+        
+        <div class="flex gap-2 overflow-x-auto pb-4">
             <button onclick="setFilter('all')" class="filter-btn active" id="f-all">全部</button>
             <button onclick="setFilter('未付款')" class="filter-btn" id="f-unpaid">未付款</button>
             <button onclick="setFilter('未配送')" class="filter-btn" id="f-pending">未配送</button>
@@ -73,43 +77,43 @@
     </section>
 
     <section id="page-delivery" class="page">
-        <h1 class="text-3xl font-black mb-6">LOGISTICS.</h1>
+        <h1 class="text-4xl font-black mb-8 tracking-tighter">DELIVERY.</h1>
         <div id="delivery-list" class="space-y-4"></div>
     </section>
 
     <nav class="nav-bar">
-        <div onclick="go('home')" id="n-home" class="nav-btn active">商店</div>
-        <div onclick="go('admin')" id="n-admin" class="nav-btn">管理</div>
-        <div onclick="go('delivery')" id="n-delivery" class="nav-btn">配送</div>
+        <div onclick="checkAdminAccess('home')" id="n-home" class="nav-btn active">商店</div>
+        <div onclick="checkAdminAccess('admin')" id="n-admin" class="nav-btn">管理</div>
+        <div onclick="checkAdminAccess('delivery')" id="n-delivery" class="nav-btn">配送</div>
     </nav>
 
-    <div id="edit-modal" class="fixed inset-0 bg-black/60 hidden backdrop-blur-sm z-[1000] flex items-center justify-center p-4">
-        <div class="bg-white w-full max-w-sm rounded-[30px] p-6 shadow-2xl">
-            <h2 class="text-xl font-black mb-4">編輯商品</h2>
-            <div class="space-y-3">
-                <input id="e-id" type="hidden">
-                <input id="e-name" type="text" placeholder="品名" class="w-full p-3 bg-slate-50 rounded-xl border-0">
-                <div class="flex gap-2">
-                    <input id="e-price" type="number" placeholder="價格" class="flex-1 p-3 bg-slate-50 rounded-xl border-0">
-                    <input id="e-stock" type="number" placeholder="庫存" class="flex-1 p-3 bg-slate-50 rounded-xl border-0">
+    <div id="buy-modal" class="fixed inset-0 bg-black/70 hidden backdrop-blur-md z-[1000] flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-sm rounded-[40px] p-8 shadow-2xl">
+            <h2 id="m-buy-title" class="text-2xl font-black mb-6">商品預購</h2>
+            <div class="space-y-4">
+                <input id="f-name" type="text" placeholder="真實姓名" class="w-full p-4 bg-slate-50 rounded-2xl border-0">
+                <input id="f-location" type="text" placeholder="配送地點 (教室/攤位)" class="w-full p-4 bg-slate-100 rounded-2xl border-0">
+                <div class="flex gap-2"><select id="f-class" class="flex-1 p-4 bg-slate-50 rounded-2xl border-0"></select><select id="f-seat" class="w-24 p-4 bg-slate-50 rounded-2xl border-0"></select></div>
+                <div class="bg-blue-600 p-5 rounded-[28px] text-white flex justify-between items-center">
+                    <input id="f-qty" type="number" value="1" min="1" oninput="recalcTotal()" class="w-16 bg-transparent font-black text-2xl outline-none">
+                    <p id="f-total-price" class="font-black text-3xl">$0</p>
                 </div>
-                <input id="e-img" type="text" placeholder="圖片URL" class="w-full p-3 bg-slate-50 rounded-xl border-0 text-xs">
-                <button onclick="saveProduct()" class="w-full bg-black text-white py-4 rounded-2xl font-black mt-2">儲存</button>
-                <button id="btn-del-product" onclick="deleteProduct()" class="w-full bg-red-50 text-red-500 py-3 rounded-2xl font-bold text-sm hidden">刪除此商品</button>
-                <button onclick="closeModals()" class="w-full text-slate-400 font-bold py-2 text-sm">取消</button>
+                <button id="btn-submit-order" class="w-full bg-slate-900 text-white py-5 rounded-[25px] font-black">確認預訂</button>
+                <button onclick="closeModals()" class="w-full text-slate-300 font-bold py-2">取消</button>
             </div>
         </div>
     </div>
 
-    <div id="buy-modal" class="fixed inset-0 bg-black/60 hidden backdrop-blur-sm z-[1000] flex items-center justify-center p-4">
-        <div class="bg-white w-full max-w-sm rounded-[30px] p-6 shadow-2xl">
-            <h2 id="m-buy-title" class="text-xl font-black mb-4"></h2>
+    <div id="edit-modal" class="fixed inset-0 bg-black/70 hidden backdrop-blur-md z-[1000] flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-sm rounded-[40px] p-8 shadow-2xl">
+            <h2 class="text-2xl font-black mb-6">商品編輯</h2>
             <div class="space-y-4">
-                <input id="f-name" type="text" placeholder="姓名" class="w-full p-4 bg-slate-100 rounded-2xl border-0">
-                <div class="flex gap-2"><select id="f-class" class="flex-1 p-4 bg-slate-100 rounded-2xl border-0 font-bold"></select><select id="f-seat" class="w-24 p-4 bg-slate-100 rounded-2xl border-0 font-bold"></select></div>
-                <div class="bg-blue-50 p-4 rounded-2xl flex justify-between items-center"><input id="f-qty" type="number" value="1" min="1" oninput="recalcTotal()" class="w-16 bg-transparent font-black text-xl"><p id="f-total-price" class="font-black text-2xl text-blue-600">$0</p></div>
-                <button id="btn-submit-order" class="w-full bg-blue-600 text-white py-4 rounded-2xl font-black">確認預訂</button>
-                <button onclick="closeModals()" class="w-full text-slate-300 font-bold py-2">取消</button>
+                <input id="e-id" type="hidden"><input id="e-name" type="text" placeholder="品名" class="w-full p-4 bg-slate-50 rounded-2xl border-0">
+                <div class="flex gap-2"><input id="e-price" type="number" placeholder="價格" class="flex-1 p-4 bg-slate-50 rounded-2xl border-0"><input id="e-stock" type="number" placeholder="庫存" class="flex-1 p-4 bg-slate-50 rounded-2xl border-0"></div>
+                <input id="e-img" type="text" placeholder="圖片URL" class="w-full p-4 bg-slate-50 rounded-2xl border-0 text-xs">
+                <button onclick="saveProduct()" class="w-full bg-blue-600 text-white py-5 rounded-[25px] font-black">儲存</button>
+                <button id="btn-del-product" onclick="deleteProduct()" class="w-full bg-red-50 text-red-500 py-3 rounded-2xl font-bold text-sm hidden">刪除商品</button>
+                <button onclick="closeModals()" class="w-full text-slate-300 font-bold py-2">關閉</button>
             </div>
         </div>
     </div>
@@ -119,6 +123,8 @@
         const SUPABASE_KEY = 'sb_publishable_8LJkxWG-tcL0PBPtDyreVw_HyqKSDNk';
         const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+        const ADMIN_PWD = '@hwhs'; // 你的管理員密碼
+        let isAdminLoggedIn = false;
         let products = [];
         let orders = [];
         let currentFilter = 'all';
@@ -126,6 +132,27 @@
         function toast(msg) {
             const t = document.getElementById('toast'); t.innerText = msg; t.classList.add('show');
             setTimeout(() => t.classList.remove('show'), 2000);
+        }
+
+        // 管理員密碼驗證邏輯
+        function checkAdminAccess(targetPage) {
+            if (targetPage === 'home') {
+                go('home');
+                return;
+            }
+            
+            if (isAdminLoggedIn) {
+                go(targetPage);
+            } else {
+                const input = prompt("請輸入管理員密碼：");
+                if (input === ADMIN_PWD) {
+                    isAdminLoggedIn = true;
+                    toast("認證成功，歡迎進入系統");
+                    go(targetPage);
+                } else if (input !== null) {
+                    toast("密碼錯誤，拒絕訪問");
+                }
+            }
         }
 
         function go(id) {
@@ -143,80 +170,70 @@
             if(o) { orders = o; renderAdminOrders(); renderDelivery(); }
         }
 
-        // 商店顯示邏輯
         function renderStore() {
             document.getElementById('product-list').innerHTML = products.map(p => `
-                <div class="bg-white p-2 rounded-[24px] border border-slate-200 shadow-sm overflow-hidden">
-                    <div class="relative w-full aspect-square bg-slate-50 flex items-center justify-center rounded-xl overflow-hidden">
+                <div class="bg-white p-3 rounded-[32px] border border-slate-100 shadow-sm relative">
+                    <div class="relative w-full aspect-square bg-slate-50 flex items-center justify-center rounded-[24px] overflow-hidden border">
                         <img src="${p.image_url}" class="max-w-full max-h-full object-contain">
-                        ${p.stock <= 0 ? '<div class="absolute inset-0 bg-black/40 flex items-center justify-center text-white font-black">完售</div>' : ''}
+                        ${p.stock <= 0 ? '<div class="absolute inset-0 bg-black/60 flex items-center justify-center text-white font-black">SOLD OUT</div>' : ''}
                     </div>
-                    <div class="p-2 text-center">
-                        <p class="font-bold text-sm truncate">${p.name}</p>
-                        <p class="font-black text-blue-600">$${p.price}</p>
-                        <button onclick="openBuyModal('${p.id}')" ${p.stock <= 0 ? 'disabled' : ''} class="w-full mt-2 py-2 rounded-xl text-[10px] font-black ${p.stock <= 0 ? 'bg-slate-100 text-slate-300':'bg-slate-900 text-white'}">預訂</button>
+                    <div class="p-3 text-center">
+                        <p class="font-bold text-slate-800 truncate">${p.name}</p>
+                        <p class="font-black text-blue-600 text-xl mt-1">$${p.price}</p>
+                        <button onclick="openBuyModal('${p.id}')" ${p.stock <= 0 ? 'disabled' : ''} class="w-full mt-3 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest ${p.stock <= 0 ? 'bg-slate-100 text-slate-300':'bg-slate-900 text-white shadow-lg'}">預訂商品</button>
                     </div>
                 </div>
             `).join('');
         }
 
-        // 商品管理
         function renderAdminP() {
             document.getElementById('admin-product-list').innerHTML = products.map(p => `
-                <div class="bg-white p-3 rounded-2xl border flex items-center gap-3 shadow-sm">
-                    <img src="${p.image_url}" class="w-10 h-10 rounded-lg object-contain bg-slate-50 border">
-                    <div class="flex-1 font-bold text-sm">${p.name} <span class="text-blue-600 text-xs">$${p.price} / 剩${p.stock}</span></div>
-                    <button onclick="openEditModal('${p.id}')" class="text-xs font-black text-slate-300">EDIT</button>
+                <div class="bg-white p-4 rounded-3xl border flex items-center gap-4 shadow-sm">
+                    <img src="${p.image_url}" class="w-12 h-12 rounded-xl object-contain bg-slate-50 border">
+                    <div class="flex-1">
+                        <p class="font-black text-sm text-slate-800">${p.name}</p>
+                        <p class="text-[10px] font-bold ${p.stock < 5 ? 'text-red-500':'text-slate-400'} uppercase">價格: $${p.price} | 庫存: ${p.stock}</p>
+                    </div>
+                    <button onclick="openEditModal('${p.id}')" class="bg-slate-100 p-3 rounded-xl text-[10px] font-black text-slate-500">編輯</button>
                 </div>
             `).join('');
         }
 
-        // 訂單管理與篩選
         window.setFilter = (f) => {
             currentFilter = f;
             document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-            if(f==='all') document.getElementById('f-all').classList.add('active');
-            if(f==='未付款') document.getElementById('f-unpaid').classList.add('active');
-            if(f==='未配送') document.getElementById('f-pending').classList.add('active');
-            if(f==='已完成') document.getElementById('f-done').classList.add('active');
+            const ids = {'all':'f-all','未付款':'f-unpaid','未配送':'f-pending','已完成':'f-done'};
+            document.getElementById(ids[f]).classList.add('active');
             renderAdminOrders();
         };
 
         function renderAdminOrders() {
             document.getElementById('total-revenue').innerText = '$' + orders.reduce((s,x)=>s+x.total_price, 0);
-            
+            const search = document.getElementById('order-search').value.toLowerCase();
             const filtered = orders.filter(x => {
+                const matchSearch = x.customer_name.toLowerCase().includes(search) || (x.location || '').toLowerCase().includes(search);
+                if(!matchSearch) return false;
                 if(currentFilter === 'all') return true;
                 if(currentFilter === '未付款') return x.payment_status === '未付款';
                 if(currentFilter === '未配送') return x.delivery_status === '未配送';
                 if(currentFilter === '已完成') return x.delivery_status === '已完成';
                 return true;
             });
-
-            document.getElementById('admin-order-list').innerHTML = filtered.map(x => {
-                let timeStr = "";
-                if(x.completed_at) {
-                    const date = new Date(x.completed_at);
-                    timeStr = `<p class="text-[9px] text-green-500 font-bold mt-1">完成時間: ${date.toLocaleString('zh-TW', {hour12:false})}</p>`;
-                }
-                return `
-                <div class="bg-white p-4 rounded-2xl border shadow-sm relative">
+            document.getElementById('admin-order-list').innerHTML = filtered.map(x => `
+                <div class="bg-white p-5 rounded-3xl border shadow-sm relative">
                     <div class="flex justify-between items-start">
-                        <div>
-                            <p class="font-black text-sm">${x.customer_name} <span class="text-slate-400 font-normal">(${x.class_name})</span></p>
-                            <p class="text-xs text-slate-500">${x.product_name} x${x.quantity}</p>
-                            ${timeStr}
+                        <div class="flex-1">
+                            <p class="font-black text-slate-800">${x.customer_name} <span class="text-blue-500 text-xs">@${x.location || '未填地點'}</span></p>
+                            <p class="text-xs text-slate-400 mt-1 font-bold">${x.product_name} x${x.quantity} (${x.class_name})</p>
                         </div>
                         <div class="text-right">
-                            <p class="font-black text-sm">$${x.total_price}</p>
-                            <button onclick="deleteOrder('${x.id}')" class="text-[10px] font-bold text-red-400 mt-2">取消預訂</button>
+                            <p class="font-black text-lg text-slate-900">$${x.total_price}</p>
+                            <button onclick="deleteOrder('${x.id}')" class="text-[10px] font-bold text-red-300 mt-3">取消</button>
                         </div>
                     </div>
-                </div>`;
-            }).join('');
+                </div>`).join('');
         }
 
-        // 配送清單與自動隱藏
         function renderDelivery() {
             const now = new Date().getTime();
             const filtered = orders.filter(x => {
@@ -225,42 +242,66 @@
                 }
                 return true;
             });
-
             document.getElementById('delivery-list').innerHTML = filtered.map(x => `
-                <div class="bg-white p-5 rounded-[28px] border shadow-sm ${x.delivery_status==='已完成'?'opacity-50':''}">
+                <div class="bg-white p-6 rounded-[40px] border shadow-xl">
                     <div class="flex justify-between mb-4">
                         <div>
-                            <p class="text-xl font-black">${x.class_name}-${x.seat_number}號</p>
-                            <p class="text-xs font-bold text-slate-400">${x.customer_name} · ${x.product_name}</p>
+                            <p class="text-xs font-black text-blue-600 uppercase tracking-widest mb-1">${x.location || '無地點'}</p>
+                            <p class="text-2xl font-black text-slate-900">${x.class_name} - ${x.seat_number}號</p>
+                            <p class="font-bold text-slate-400 mt-1">${x.customer_name} · ${x.product_name} x${x.quantity}</p>
                         </div>
-                        <p class="font-black text-blue-600 text-lg">$${x.total_price}</p>
+                        <div class="bg-slate-100 px-4 py-2 rounded-2xl font-black">$${x.total_price}</div>
                     </div>
-                    <div class="grid grid-cols-2 gap-2">
-                        <select onchange="updStatus('${x.id}','payment_status',this.value)" class="p-3 bg-slate-50 rounded-xl text-xs font-bold border-0">
+                    <div class="grid grid-cols-2 gap-3">
+                        <select onchange="updStatus('${x.id}','payment_status',this.value)" class="p-4 bg-slate-50 rounded-2xl text-xs font-black">
                             <option ${x.payment_status==='未付款'?'selected':''}>未付款</option>
                             <option ${x.payment_status==='已付款'?'selected':''}>已付款</option>
                         </select>
-                        <select onchange="updStatus('${x.id}','delivery_status',this.value)" class="p-3 bg-slate-50 rounded-xl text-xs font-bold border-0">
+                        <select onchange="updStatus('${x.id}','delivery_status',this.value)" class="p-4 bg-slate-900 text-white rounded-2xl text-xs font-black">
                             <option ${x.delivery_status==='未配送'?'selected':''}>未配送</option>
                             <option ${x.delivery_status==='已完成'?'selected':''}>已完成</option>
                         </select>
                     </div>
-                </div>
-            `).join('');
+                </div>`).join('');
         }
+
+        window.exportToCSV = () => {
+            let csv = "姓名,班級,地點,商品,數量,總價\n";
+            orders.forEach(o => csv += `${o.customer_name},${o.class_name},${o.location || ''},${o.product_name},${o.quantity},${o.total_price}\n`);
+            const blob = new Blob(["\ufeff" + csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = "訂單匯出.csv"; link.click();
+        };
 
         window.updStatus = async (id, f, v) => {
             let data = { [f]: v };
-            if (f === 'delivery_status' && v === '已完成') {
-                data.completed_at = new Date().toISOString();
-            } else if (f === 'delivery_status' && v === '未配送') {
-                data.completed_at = null;
-            }
+            if (f === 'delivery_status' && v === '已完成') data.completed_at = new Date().toISOString();
             await client.from('orders').update(data).eq('id', id);
-            toast('狀態已更新'); refresh();
+            refresh();
         };
 
-        // 基本維護功能
+        window.openBuyModal = (id) => {
+            currentP = products.find(x => x.id === id);
+            document.getElementById('m-buy-title').innerText = currentP.name;
+            document.getElementById('f-qty').value = 1; recalcTotal();
+            document.getElementById('buy-modal').classList.remove('hidden');
+        };
+
+        document.getElementById('btn-submit-order').onclick = async () => {
+            const name = document.getElementById('f-name').value;
+            const loc = document.getElementById('f-location').value;
+            const qty = parseInt(document.getElementById('f-qty').value);
+            if(!name || !loc) return toast('⚠️ 請填寫姓名與地點');
+            await client.from('products').update({ stock: currentP.stock - qty }).eq('id', currentP.id);
+            await client.from('orders').insert([{
+                customer_name: name, location: loc, class_name: document.getElementById('f-class').value,
+                seat_number: document.getElementById('f-seat').value, product_name: currentP.name,
+                quantity: qty, total_price: qty * currentP.price, payment_status: '未付款', delivery_status: '未配送'
+            }]);
+            toast('預訂成功'); closeModals(); refresh();
+        };
+
         window.openEditModal = (id) => {
             const btnDel = document.getElementById('btn-del-product');
             if(id) {
@@ -273,11 +314,11 @@
                 btnDel.classList.remove('hidden');
             } else {
                 document.getElementById('e-id').value = '';
-                document.getElementById('e-name').value = '';
                 btnDel.classList.add('hidden');
             }
             document.getElementById('edit-modal').classList.remove('hidden');
         };
+
         window.saveProduct = async () => {
             const data = { name: document.getElementById('e-name').value, price: parseInt(document.getElementById('e-price').value), stock: parseInt(document.getElementById('e-stock').value), image_url: document.getElementById('e-img').value };
             const id = document.getElementById('e-id').value;
@@ -285,30 +326,11 @@
             else await client.from('products').insert([data]);
             closeModals(); refresh();
         };
-        window.deleteProduct = async () => { if(confirm('刪除商品？')) { await client.from('products').delete().eq('id', document.getElementById('e-id').value); closeModals(); refresh(); }};
-        window.deleteOrder = async (id) => { if(confirm('取消預訂？')) { await client.from('orders').delete().eq('id', id); refresh(); }};
-        window.closeModals = () => { document.getElementById('buy-modal').classList.add('hidden'); document.getElementById('edit-modal').classList.add('hidden'); };
 
-        // 買家功能
-        window.openBuyModal = (id) => {
-            const p = products.find(x => x.id === id); currentP = p;
-            document.getElementById('m-buy-title').innerText = p.name;
-            document.getElementById('f-qty').value = 1; recalcTotal();
-            document.getElementById('buy-modal').classList.remove('hidden');
-        };
         window.recalcTotal = () => { document.getElementById('f-total-price').innerText = '$' + (document.getElementById('f-qty').value * currentP.price); };
-        document.getElementById('btn-submit-order').onclick = async () => {
-            const name = document.getElementById('f-name').value;
-            const qty = parseInt(document.getElementById('f-qty').value);
-            if(!name) return toast('請輸入姓名');
-            await client.from('products').update({ stock: currentP.stock - qty }).eq('id', currentP.id);
-            await client.from('orders').insert([{
-                customer_name: name, class_name: document.getElementById('f-class').value,
-                seat_number: document.getElementById('f-seat').value, product_name: currentP.name,
-                quantity: qty, total_price: qty * currentP.price, payment_status: '未付款', delivery_status: '未配送'
-            }]);
-            toast('預訂成功'); closeModals(); refresh();
-        };
+        window.closeModals = () => { document.querySelectorAll('.fixed').forEach(m => m.classList.add('hidden')); };
+        window.deleteOrder = async (id) => { if(confirm('取消訂單？')) { await client.from('orders').delete().eq('id', id); refresh(); }};
+        window.deleteProduct = async () => { if(confirm('刪除商品？')) { await client.from('products').delete().eq('id', document.getElementById('e-id').value); closeModals(); refresh(); }};
 
         function initClasses() {
             const cls = document.getElementById('f-class');
